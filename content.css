@@ -145,14 +145,13 @@
   background: #EFE7D8;
   border-bottom: 1px solid var(--lho-border);
   padding: 8px 12px;
-  overflow-x: auto;
-  white-space: nowrap;
 }
 
 .lho-tabs-container {
   display: flex;
   align-items: center;
-  gap: 6px;
+  flex-wrap: wrap;
+  gap: 8px 6px;
 }
 
 .lho-tab {
