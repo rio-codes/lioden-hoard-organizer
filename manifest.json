@@ -32,6 +32,7 @@
         "content.css"
       ],
       "js": [
+        "emojis.js",
         "content.js"
       ],
       "run_at": "document_idle"

@@ -1183,7 +1183,7 @@
     backdrop.id = 'lho-modal-backdrop';
 
     backdrop.innerHTML = `
-      <div class="lho-modal">
+      <div class="lho-modal" style="max-width: 520px;">
         <div class="lho-modal-header">
           <span>${isEdit ? 'Edit Folder' : 'Create New Folder'}</span>
           <button type="button" class="lho-modal-close" id="lho-modal-close">&times;</button>
@@ -1195,22 +1195,40 @@
           </div>
 
           <div class="lho-form-group">
-            <label class="lho-form-label">Choose Icon</label>
-            <div class="lho-icon-palette" id="lho-icon-palette">
-              ${PRESET_ICONS.map(icon => `
-                <div class="lho-icon-choice ${icon === selectedIcon ? 'selected' : ''}" data-icon="${icon}">
-                  ${icon}
-                </div>
-              `).join('')}
-            </div>
-          </div>
-
-          <div class="lho-form-group">
             <label class="lho-form-label">Choose Color</label>
             <div class="lho-color-palette" id="lho-color-palette">
               ${PRESET_COLORS.map(color => `
                 <div class="lho-color-swatch ${color === selectedColor ? 'selected' : ''}" style="background: ${color};" data-color="${color}"></div>
               `).join('')}
+            </div>
+          </div>
+
+          <div class="lho-form-group">
+            <label class="lho-form-label">Folder Icon</label>
+            <div class="lho-emoji-picker-container">
+              <div class="lho-emoji-search-row">
+                <div class="lho-emoji-current-preview" id="lho-emoji-preview" style="border-color: ${selectedColor};" title="Selected Icon">
+                  ${selectedIcon}
+                </div>
+                <input type="text" class="lho-emoji-search-input" id="lho-emoji-search-input" placeholder="🔍 Search 1,800+ emojis (e.g. lion, skull, meat, herb, star)...">
+              </div>
+              <div class="lho-emoji-custom-hint">
+                <span>Click an emoji below, or type/paste any custom emoji.</span>
+                <span id="lho-emoji-count-label" style="font-weight: 600;"></span>
+              </div>
+              <div class="lho-emoji-cat-bar" id="lho-emoji-cat-bar">
+                <button type="button" class="lho-emoji-cat-chip active" data-cat="popular">⭐ Popular</button>
+                <button type="button" class="lho-emoji-cat-chip" data-cat="animals">🐾 Animals &amp; Nature</button>
+                <button type="button" class="lho-emoji-cat-chip" data-cat="food">🍖 Food &amp; Plants</button>
+                <button type="button" class="lho-emoji-cat-chip" data-cat="objects">✨ Objects &amp; Loot</button>
+                <button type="button" class="lho-emoji-cat-chip" data-cat="symbols">☀️ Symbols</button>
+                <button type="button" class="lho-emoji-cat-chip" data-cat="all">All Emojis</button>
+              </div>
+              <div class="lho-emoji-grid-wrap">
+                <div class="lho-emoji-grid" id="lho-emoji-grid">
+                  <!-- Filtered emojis rendered here -->
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1226,14 +1244,119 @@
     const nameInput = backdrop.querySelector('#lho-folder-name-input');
     nameInput.focus();
 
-    // Icon Picker
-    backdrop.querySelectorAll('.lho-icon-choice').forEach(btn => {
-      btn.addEventListener('click', () => {
-        backdrop.querySelectorAll('.lho-icon-choice').forEach(b => b.classList.remove('selected'));
-        btn.classList.add('selected');
-        selectedIcon = btn.dataset.icon;
+    const emojiPreview = backdrop.querySelector('#lho-emoji-preview');
+    const emojiSearch = backdrop.querySelector('#lho-emoji-search-input');
+    const emojiGrid = backdrop.querySelector('#lho-emoji-grid');
+    const emojiCatBar = backdrop.querySelector('#lho-emoji-cat-bar');
+    const emojiCountLabel = backdrop.querySelector('#lho-emoji-count-label');
+
+    const allEmojis = (typeof window !== 'undefined' ? window : globalThis).__LHO_EMOJIS__ || [];
+    let currentCat = 'popular';
+    let emojiDebounce = null;
+
+    const POPULAR_LIST = [
+      '📁', '🦁', '🦴', '🌿', '🍖', '🥩', '💎', '✨', '🐾', '🛡️', '⚔️', '🪲', '🐞', '🦗', '🕷️',
+      '🦂', '🐍', '🦅', '🦉', '🪶', '💀', '☠️', '🩸', '📦', '🏷️', '🧪', '🧬', '🔮', '🌙', '☀️',
+      '🔥', '💧', '🪵', '🪨', '🥚', '👑', '🏆', '⭐', '❤️', '🖤'
+    ];
+
+    function filterEmojis() {
+      const q = emojiSearch ? emojiSearch.value.trim().toLowerCase() : '';
+      let results = [];
+
+      if (q) {
+        if (/\p{Extended_Pictographic}/u.test(q)) {
+          selectedIcon = q;
+          if (emojiPreview) emojiPreview.textContent = q;
+        }
+
+        results = allEmojis.filter(item => 
+          item.e === q ||
+          item.n.includes(q) ||
+          (item.k && item.k.includes(q))
+        );
+      } else if (currentCat === 'popular') {
+        results = allEmojis.filter(item => POPULAR_LIST.includes(item.e));
+        if (results.length === 0) {
+          results = POPULAR_LIST.map(e => ({ e, n: '', k: '' }));
+        }
+      } else if (currentCat === 'animals') {
+        const words = ['cat', 'dog', 'lion', 'animal', 'bird', 'prey', 'insect', 'bug', 'reptile', 'fish', 'bear', 'wolf', 'skull', 'bone', 'feather', 'egg', 'nest', 'paw'];
+        results = allEmojis.filter(item => words.some(w => item.n.includes(w) || (item.k && item.k.includes(w))));
+      } else if (currentCat === 'food') {
+        const words = ['meat', 'food', 'apple', 'herb', 'plant', 'mushroom', 'drink', 'fruit', 'bread', 'meal', 'corn', 'beans'];
+        results = allEmojis.filter(item => words.some(w => item.n.includes(w) || (item.k && item.k.includes(w))));
+      } else if (currentCat === 'objects') {
+        const words = ['book', 'sword', 'shield', 'crown', 'gem', 'box', 'package', 'tube', 'tool', 'key', 'potion', 'crystal', 'scroll', 'medal', 'trophy'];
+        results = allEmojis.filter(item => words.some(w => item.n.includes(w) || (item.k && item.k.includes(w))));
+      } else if (currentCat === 'symbols') {
+        const words = ['star', 'sparkle', 'heart', 'moon', 'sun', 'fire', 'water', 'symbol', 'cross', 'circle', 'warning', 'check'];
+        results = allEmojis.filter(item => words.some(w => item.n.includes(w) || (item.k && item.k.includes(w))));
+      } else {
+        results = allEmojis;
+      }
+
+      const displayResults = results.slice(0, 120);
+
+      if (emojiCountLabel) {
+        emojiCountLabel.textContent = `${results.length} emojis found`;
+      }
+
+      if (displayResults.length === 0) {
+        emojiGrid.innerHTML = `
+          <div class="lho-emoji-empty">
+            No emojis found matching "${escapeHtml(q)}".<br>
+            <span style="font-size: 11px;">You can type or paste any custom emoji directly into the box!</span>
+          </div>
+        `;
+        return;
+      }
+
+      emojiGrid.innerHTML = displayResults.map(item => `
+        <button type="button" class="lho-emoji-btn ${item.e === selectedIcon ? 'selected' : ''}" 
+                data-emoji="${item.e}" 
+                title="${escapeHtml(item.n)}">
+          ${item.e}
+        </button>
+      `).join('');
+
+      emojiGrid.querySelectorAll('.lho-emoji-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          updateSelectedIcon(btn.dataset.emoji);
+        });
       });
-    });
+    }
+
+    function updateSelectedIcon(emoji) {
+      selectedIcon = emoji;
+      if (emojiPreview) emojiPreview.textContent = emoji;
+      emojiGrid.querySelectorAll('.lho-emoji-btn').forEach(btn => {
+        if (btn.dataset.emoji === emoji) {
+          btn.classList.add('selected');
+        } else {
+          btn.classList.remove('selected');
+        }
+      });
+    }
+
+    if (emojiSearch) {
+      emojiSearch.addEventListener('input', () => {
+        clearTimeout(emojiDebounce);
+        emojiDebounce = setTimeout(filterEmojis, 40);
+      });
+    }
+
+    if (emojiCatBar) {
+      emojiCatBar.querySelectorAll('.lho-emoji-cat-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+          emojiCatBar.querySelectorAll('.lho-emoji-cat-chip').forEach(c => c.classList.remove('active'));
+          chip.classList.add('active');
+          currentCat = chip.dataset.cat;
+          if (emojiSearch) emojiSearch.value = '';
+          filterEmojis();
+        });
+      });
+    }
 
     // Color Swatch Picker
     backdrop.querySelectorAll('.lho-color-swatch').forEach(btn => {
@@ -1241,10 +1364,11 @@
         backdrop.querySelectorAll('.lho-color-swatch').forEach(b => b.classList.remove('selected'));
         btn.classList.add('selected');
         selectedColor = btn.dataset.color;
+        if (emojiPreview) emojiPreview.style.borderColor = selectedColor;
       });
     });
 
-    // Save
+    // Save Button
     backdrop.querySelector('#lho-modal-save').addEventListener('click', () => {
       const name = nameInput.value.trim();
       if (!name) {
@@ -1283,6 +1407,9 @@
     backdrop.addEventListener('click', (e) => {
       if (e.target === backdrop) closeModal();
     });
+
+    // Run initial filter
+    filterEmojis();
   }
 
   function deleteFolder(folderId) {

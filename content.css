@@ -857,3 +857,133 @@
 .lho-hidden {
   display: none !important;
 }
+
+
+/* Emoji Picker & Search */
+.lho-emoji-picker-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.lho-emoji-search-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lho-emoji-current-preview {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  border: 2px solid var(--lho-accent);
+  background: #FFF;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 26px;
+  flex-shrink: 0;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+  transition: all 0.15s ease;
+}
+
+.lho-emoji-search-input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid var(--lho-border-dark);
+  border-radius: 6px;
+  background: #FFF;
+  font-size: 13px;
+  box-sizing: border-box;
+}
+.lho-emoji-search-input:focus {
+  outline: none;
+  border-color: var(--lho-accent);
+  box-shadow: 0 0 5px rgba(199, 139, 42, 0.3);
+}
+
+.lho-emoji-cat-bar {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  white-space: nowrap;
+  padding-bottom: 2px;
+}
+
+.lho-emoji-cat-chip {
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  background: #FFF;
+  border: 1px solid var(--lho-border);
+  border-radius: 12px;
+  cursor: pointer;
+  color: var(--lho-text);
+  user-select: none;
+  transition: all 0.12s ease;
+}
+.lho-emoji-cat-chip:hover {
+  background: #F2E9DA;
+  border-color: var(--lho-accent);
+}
+.lho-emoji-cat-chip.active {
+  background: var(--lho-primary);
+  color: #FFF;
+  border-color: var(--lho-primary-dark);
+}
+
+.lho-emoji-grid-wrap {
+  border: 1px solid var(--lho-border-dark);
+  border-radius: 6px;
+  background: #FFF;
+  max-height: 180px;
+  overflow-y: auto;
+  padding: 6px;
+}
+
+.lho-emoji-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(36px, 1fr));
+  gap: 4px;
+}
+
+.lho-emoji-btn {
+  font-size: 22px;
+  height: 36px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  background: none;
+  transition: all 0.1s ease;
+  user-select: none;
+}
+.lho-emoji-btn:hover {
+  background: #F4EDE1;
+  transform: scale(1.18);
+  z-index: 2;
+}
+.lho-emoji-btn.selected {
+  background: var(--lho-accent);
+  border-color: var(--lho-accent-light);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+
+.lho-emoji-empty {
+  padding: 20px;
+  text-align: center;
+  color: var(--lho-text-muted);
+  font-size: 12px;
+  grid-column: 1 / -1;
+}
+
+.lho-emoji-custom-hint {
+  font-size: 11px;
+  color: var(--lho-text-muted);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
