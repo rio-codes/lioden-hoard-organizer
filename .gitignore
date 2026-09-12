@@ -1,5 +1,7 @@
 .DS_Store
 *.log
+*~
 scratch/
 *_files/
 dist/
+Organise Hoard ___ Lioden.html

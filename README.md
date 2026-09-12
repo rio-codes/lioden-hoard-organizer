@@ -2,6 +2,8 @@
 
 A standalone browser extension (Manifest V3) for [Lioden](https://www.lioden.com) that allows you to organize your Hoard into user-created folders, aggregates all items across pages, and provides instant filtering, sorting, and drag-and-drop organization.
 
+![Lioden Hoard Organizer Preview](lioden-hoard-sorter-screenshot.png)
+
 ---
 
 ## Features
