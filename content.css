@@ -986,3 +986,42 @@
   justify-content: space-between;
   align-items: center;
 }
+
+
+/* Folder Drag-and-Drop Reordering & Action Tabs */
+.lho-tab.user-folder-tab {
+  cursor: grab;
+}
+.lho-tab.user-folder-tab:active {
+  cursor: grabbing;
+}
+
+.lho-tab.folder-dragging {
+  opacity: 0.4;
+  transform: scale(0.94);
+  cursor: grabbing !important;
+}
+
+.lho-tab.drag-reorder-left {
+  box-shadow: -4px 0 0 0 var(--lho-accent) !important;
+  transform: translateX(2px);
+}
+
+.lho-tab.drag-reorder-right {
+  box-shadow: 4px 0 0 0 var(--lho-accent) !important;
+  transform: translateX(-2px);
+}
+
+.lho-tab.lho-tab-action {
+  border-style: dashed;
+  border-color: var(--lho-border-dark);
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--lho-text-muted);
+  font-weight: 500;
+  font-size: 11px;
+}
+.lho-tab.lho-tab-action:hover {
+  background: #FFF;
+  border-color: var(--lho-accent);
+  color: var(--lho-primary);
+}

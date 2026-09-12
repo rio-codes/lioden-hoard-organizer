@@ -34,6 +34,7 @@
   let pageSize = 'all'; // 'all', 50, 100, 200
   let currentPage = 1;
   let isFolderViewEnabled = true;
+  let draggingFolderId = null;
 
   // Selected checkbox values across current view
   let selectedItems = new Set(); // Set of string values
@@ -327,7 +328,10 @@
           ${userFolders.map(folder => {
             const count = countFolderItems(folder.id);
             return `
-              <div class="lho-tab ${activeFolderId === folder.id ? 'active' : ''}" data-folder-id="${folder.id}">
+              <div class="lho-tab user-folder-tab ${activeFolderId === folder.id ? 'active' : ''}" 
+                   draggable="true" 
+                   data-folder-id="${folder.id}" 
+                   title="Drag to reorder folder or click to open">
                 <span class="lho-tab-dot" style="background: ${folder.color};"></span>
                 <span class="lho-tab-icon">${folder.icon || '📁'}</span>
                 <span>${escapeHtml(folder.name)}</span>
@@ -343,6 +347,13 @@
             <span>All Items</span>
             <span class="lho-tab-count">${totalCount}</span>
           </div>
+
+          <!-- Sort Folders Button (if 2+ folders) -->
+          ${userFolders.length >= 2 ? `
+            <div class="lho-tab lho-tab-action" id="lho-btn-sort-folders" title="Sort folders alphabetically or by size">
+              <span>⇅ Sort Folders ▾</span>
+            </div>
+          ` : ''}
         </div>
       </div>
 
@@ -731,8 +742,18 @@
     // Folder Tabs Click & Drag-and-Drop Target
     const tabsContainer = root.querySelector('#lho-folder-tabs');
     if (tabsContainer) {
+      // Sort Folders Button Click
+      const btnSortFolders = tabsContainer.querySelector('#lho-btn-sort-folders');
+      if (btnSortFolders) {
+        btnSortFolders.addEventListener('click', (e) => {
+          e.stopPropagation();
+          showFolderSortMenu(btnSortFolders);
+        });
+      }
+
       tabsContainer.querySelectorAll('.lho-tab').forEach(tab => {
         const folderId = tab.dataset.folderId;
+        if (!folderId) return; // e.g. sort button
 
         tab.addEventListener('click', (e) => {
           if (e.target.dataset.action === 'folder-menu') {
@@ -749,26 +770,90 @@
           }
         });
 
-        // HTML5 Drag and Drop Target
+        // Folder Drag-to-Reorder start
+        if (tab.classList.contains('user-folder-tab')) {
+          tab.addEventListener('dragstart', (e) => {
+            if (e.target.dataset.action === 'folder-menu') {
+              e.preventDefault();
+              return;
+            }
+            draggingFolderId = folderId;
+            tab.classList.add('folder-dragging');
+            e.dataTransfer.setData('application/x-lho-folder', folderId);
+            e.dataTransfer.setData('text/plain', folderId);
+            e.dataTransfer.effectAllowed = 'move';
+          });
+
+          tab.addEventListener('dragend', () => {
+            draggingFolderId = null;
+            tab.classList.remove('folder-dragging');
+            tabsContainer.querySelectorAll('.lho-tab').forEach(t => {
+              t.classList.remove('drag-over', 'drag-reorder-left', 'drag-reorder-right');
+            });
+          });
+        }
+
+        // HTML5 Drag and Drop Target (supports both Item Drop and Folder Reordering)
         tab.addEventListener('dragover', (e) => {
           e.preventDefault();
-          e.dataTransfer.dropEffect = 'move';
-          tab.classList.add('drag-over');
+          if (draggingFolderId) {
+            if (folderId !== 'all' && folderId !== 'unsorted' && folderId !== draggingFolderId) {
+              e.dataTransfer.dropEffect = 'move';
+              const rect = tab.getBoundingClientRect();
+              const midpoint = rect.left + rect.width / 2;
+              if (e.clientX < midpoint) {
+                tab.classList.add('drag-reorder-left');
+                tab.classList.remove('drag-reorder-right');
+              } else {
+                tab.classList.add('drag-reorder-right');
+                tab.classList.remove('drag-reorder-left');
+              }
+            }
+          } else {
+            e.dataTransfer.dropEffect = 'move';
+            tab.classList.add('drag-over');
+          }
         });
 
         tab.addEventListener('dragleave', () => {
-          tab.classList.remove('drag-over');
+          tab.classList.remove('drag-over', 'drag-reorder-left', 'drag-reorder-right');
         });
 
         tab.addEventListener('drop', (e) => {
           e.preventDefault();
-          tab.classList.remove('drag-over');
+          tab.classList.remove('drag-over', 'drag-reorder-left', 'drag-reorder-right');
+
+          // 1. Folder Reordering Drop
+          if (draggingFolderId) {
+            const fromId = draggingFolderId;
+            draggingFolderId = null;
+            if (fromId && fromId !== folderId && folderId !== 'all' && folderId !== 'unsorted') {
+              const fromIndex = userFolders.findIndex(f => f.id === fromId);
+              const toIndex = userFolders.findIndex(f => f.id === folderId);
+              if (fromIndex !== -1 && toIndex !== -1) {
+                const rect = tab.getBoundingClientRect();
+                const midpoint = rect.left + rect.width / 2;
+                const insertBefore = e.clientX < midpoint;
+
+                const [moved] = userFolders.splice(fromIndex, 1);
+                let targetIndex = userFolders.findIndex(f => f.id === folderId);
+                if (!insertBefore) targetIndex += 1;
+                userFolders.splice(targetIndex, 0, moved);
+
+                saveStorageData();
+                showToast(`Moved "${moved.name}" folder!`);
+                renderOrganizer();
+              }
+            }
+            return;
+          }
+
+          // 2. Item Drop into Folder
           try {
             const dragData = JSON.parse(e.dataTransfer.getData('text/plain'));
             const targetFolderId = folderId === 'all' ? null : folderId;
             const targetFolderName = folderId === 'unsorted' ? 'Unsorted' : (userFolders.find(f => f.id === folderId)?.name || 'Folder');
 
-            // If dragging item is part of a multi-selection, move all selected items
             if (dragData.checkValue && selectedItems.has(dragData.checkValue) && selectedItems.size > 1) {
               let movedCount = 0;
               hoardData.inventoryData.forEach(inv => {
@@ -781,7 +866,6 @@
               selectedItems.clear();
               showToast(`Moved ${movedCount} selected items to ${targetFolderName}!`);
             } else if (dragData && dragData.itemId) {
-              // Single item drag
               assignItemToFolder(dragData.itemId, dragData.id, targetFolderId);
               showToast(`Moved "${dragData.name || 'Item'}" to ${targetFolderName}!`);
             }
@@ -1105,6 +1189,66 @@
             applyMoveToFolder(newFolderId);
           });
         }
+      });
+    });
+
+    const closeHandler = (e) => {
+      if (!popover.contains(e.target) && e.target !== anchorEl) {
+        closeAllPopovers();
+        document.removeEventListener('click', closeHandler);
+      }
+    };
+    setTimeout(() => document.addEventListener('click', closeHandler), 10);
+  }
+
+    function showFolderSortMenu(anchorEl) {
+    closeAllPopovers();
+
+    const popover = document.createElement('div');
+    popover.className = 'lho-popover';
+
+    const rect = anchorEl.getBoundingClientRect();
+    popover.style.top = `${rect.bottom + window.scrollY + 4}px`;
+    popover.style.left = `${Math.max(10, rect.left + window.scrollX - 40)}px`;
+
+    popover.innerHTML = `
+      <div class="lho-popover-header">Sort Folders:</div>
+      <div class="lho-popover-item" data-sort="name_asc">
+        <span>🔤</span> <span>Name (A → Z)</span>
+      </div>
+      <div class="lho-popover-item" data-sort="name_desc">
+        <span>🔤</span> <span>Name (Z → A)</span>
+      </div>
+      <div class="lho-popover-divider"></div>
+      <div class="lho-popover-item" data-sort="size_desc">
+        <span>📊</span> <span>Size (Most items first)</span>
+      </div>
+      <div class="lho-popover-item" data-sort="size_asc">
+        <span>📊</span> <span>Size (Fewest items first)</span>
+      </div>
+    `;
+
+    document.body.appendChild(popover);
+
+    popover.querySelectorAll('.lho-popover-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const sortMode = item.dataset.sort;
+        if (sortMode === 'name_asc') {
+          userFolders.sort((a, b) => a.name.localeCompare(b.name));
+          showToast('Folders sorted A → Z!');
+        } else if (sortMode === 'name_desc') {
+          userFolders.sort((a, b) => b.name.localeCompare(a.name));
+          showToast('Folders sorted Z → A!');
+        } else if (sortMode === 'size_desc') {
+          userFolders.sort((a, b) => countFolderItems(b.id) - countFolderItems(a.id));
+          showToast('Folders sorted by size (largest first)!');
+        } else if (sortMode === 'size_asc') {
+          userFolders.sort((a, b) => countFolderItems(a.id) - countFolderItems(b.id));
+          showToast('Folders sorted by size (smallest first)!');
+        }
+        saveStorageData();
+        closeAllPopovers();
+        renderOrganizer();
       });
     });
 
