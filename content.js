@@ -198,6 +198,16 @@
     }).length;
   }
 
+  function getFolderInventory(folderId) {
+    if (!hoardData) return [];
+    return hoardData.inventoryData.filter(inv => {
+      const f = getItemFolder(inv);
+      if (folderId === 'all') return true;
+      if (folderId === 'unsorted') return f === null;
+      return f === folderId;
+    });
+  }
+
   // =========================================================================
   // 4. UI CREATION & INJECTION
   // =========================================================================
@@ -431,6 +441,9 @@
 
           <!-- Native Bury Action Integration -->
           <input type="submit" name="buryall" value="Bury Selected" class="lho-btn lho-btn-danger lho-btn-sm" onclick="return confirm('Are you sure you want to bury these selected items?');">
+
+          <!-- Branch Action -->
+          <button type="button" class="lho-btn lho-btn-outline lho-btn-sm" id="lho-btn-bulk-branch" title="Put selected items on your branch">🌿 Branch Selected</button>
         </div>
       </div>
 
@@ -466,12 +479,18 @@
           <span class="lho-folder-name-lg">${folder.icon || '📁'} ${escapeHtml(folder.name)}</span>
           <span class="lho-stats-pill" style="background: #E0D4C1; color: var(--lho-text);">${count} items</span>
         </div>
-        <div style="display: flex; gap: 6px;">
+        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
           <button type="button" class="lho-btn lho-btn-outline lho-btn-sm" id="lho-btn-edit-folder" data-id="${folder.id}">
-            ✏️ Edit Folder
+            ✏️ Edit
+          </button>
+          <button type="button" class="lho-btn lho-btn-outline lho-btn-sm" id="lho-btn-bury-folder" data-id="${folder.id}" title="Bury all items in this folder">
+            🪦 Bury All
+          </button>
+          <button type="button" class="lho-btn lho-btn-outline lho-btn-sm" id="lho-btn-branch-folder" data-id="${folder.id}" title="Put all items in this folder on your branch">
+            🌿 Put on Branch
           </button>
           <button type="button" class="lho-btn lho-btn-danger lho-btn-sm" id="lho-btn-delete-folder" data-id="${folder.id}">
-            🗑️ Delete Folder
+            🗑️ Delete
           </button>
         </div>
       </div>
@@ -1005,13 +1024,50 @@
       });
     }
 
+    const btnBulkBranch = root.querySelector('#lho-btn-bulk-branch');
+    if (btnBulkBranch) {
+      btnBulkBranch.addEventListener('click', () => {
+        if (selectedItems.size === 0) return;
+        const itemsToBranch = [];
+        hoardData.inventoryData.forEach(inv => {
+          const val = String(inv.amount > 1 ? inv.item : inv.id);
+          if (selectedItems.has(val)) {
+            itemsToBranch.push(inv);
+          }
+        });
+        const count = itemsToBranch.length;
+        if (count === 0) return;
+        if (confirm(`Put ${count} selected item${count === 1 ? '' : 's'} on your Branch?`)) {
+          if (window.location.protocol === 'file:') {
+            showToast(`[Preview] Put ${count} selected items on Branch!`);
+            selectedItems.clear();
+            renderOrganizer();
+            return;
+          }
+          submitItemsToBranch(itemsToBranch, 'Selected Items');
+        }
+      });
+    }
+
     // Folder Banner Actions (Edit / Delete)
     const btnEditFolder = root.querySelector('#lho-btn-edit-folder');
+    const btnBuryFolder = root.querySelector('#lho-btn-bury-folder');
+    const btnBranchFolder = root.querySelector('#lho-btn-branch-folder');
     const btnDeleteFolder = root.querySelector('#lho-btn-delete-folder');
     if (btnEditFolder) {
       btnEditFolder.addEventListener('click', () => {
         const folder = userFolders.find(f => f.id === btnEditFolder.dataset.id);
         if (folder) showFolderModal(folder);
+      });
+    }
+    if (btnBuryFolder) {
+      btnBuryFolder.addEventListener('click', () => {
+        buryFolderItems(btnBuryFolder.dataset.id);
+      });
+    }
+    if (btnBranchFolder) {
+      btnBranchFolder.addEventListener('click', () => {
+        putFolderOnBranch(btnBranchFolder.dataset.id);
       });
     }
     if (btnDeleteFolder) {
@@ -1308,6 +1364,13 @@
         </div>
       ` : ''}
       <div class="lho-popover-divider"></div>
+      <div class="lho-popover-item" data-action="bury-folder">
+        <span>🪦</span> <span>Bury All Items</span>
+      </div>
+      <div class="lho-popover-item" data-action="branch-folder">
+        <span>🌿</span> <span>Put All on Branch</span>
+      </div>
+      <div class="lho-popover-divider"></div>
       <div class="lho-popover-item" data-action="delete" style="color: var(--lho-danger);">
         <span>🗑️</span> <span>Delete Folder</span>
       </div>
@@ -1348,6 +1411,22 @@
       });
     }
 
+    const buryBtn = popover.querySelector('[data-action="bury-folder"]');
+    if (buryBtn) {
+      buryBtn.addEventListener('click', () => {
+        closeAllPopovers();
+        buryFolderItems(folder.id);
+      });
+    }
+
+    const branchBtn = popover.querySelector('[data-action="branch-folder"]');
+    if (branchBtn) {
+      branchBtn.addEventListener('click', () => {
+        closeAllPopovers();
+        putFolderOnBranch(folder.id);
+      });
+    }
+
     popover.querySelector('[data-action="delete"]').addEventListener('click', () => {
       closeAllPopovers();
       if (confirm(`Delete folder "${folder.name}"? Items inside will be moved to Unsorted.`)) {
@@ -1366,6 +1445,141 @@
 
   function closeAllPopovers() {
     document.querySelectorAll('.lho-popover').forEach(el => el.remove());
+  }
+
+  function buryFolderItems(folderId) {
+    const folder = userFolders.find(f => f.id === folderId);
+    if (!folder || !hoardData) return;
+
+    const folderItems = getFolderInventory(folderId);
+    if (folderItems.length === 0) {
+      showToast(`Folder "${folder.name}" is empty.`);
+      return;
+    }
+
+    const count = folderItems.length;
+    const countText = `${count} item${count === 1 ? '' : 's'}`;
+    if (!confirm(`Are you sure you want to bury all ${countText} in folder "${folder.name}"?`)) {
+      return;
+    }
+
+    if (window.location.protocol === 'file:') {
+      showToast(`[Preview] Buried all ${countText} from "${folder.name}"!`);
+      const itemSet = new Set(folderItems.map(inv => inv.id || inv.item));
+      hoardData.inventoryData = hoardData.inventoryData.filter(inv => !itemSet.has(inv.id || inv.item));
+      renderOrganizer();
+      return;
+    }
+
+    // Submit via native hoard form POST to hoard.php
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = window.location.pathname || 'hoard.php';
+
+    folderItems.forEach(inv => {
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      if (inv.amount > 1) {
+        input.name = 'stack[]';
+        input.value = inv.item;
+      } else {
+        input.name = 'item[]';
+        input.value = inv.id;
+      }
+      form.appendChild(input);
+    });
+
+    const submitInput = document.createElement('input');
+    submitInput.type = 'hidden';
+    submitInput.name = 'buryall';
+    submitInput.value = 'Bury Checked';
+    form.appendChild(submitInput);
+
+    document.body.appendChild(form);
+    form.submit();
+  }
+
+  async function putFolderOnBranch(folderId) {
+    const folder = userFolders.find(f => f.id === folderId);
+    if (!folder || !hoardData) return;
+
+    const folderItems = getFolderInventory(folderId);
+    if (folderItems.length === 0) {
+      showToast(`Folder "${folder.name}" is empty.`);
+      return;
+    }
+
+    const count = folderItems.length;
+    const countText = `${count} item${count === 1 ? '' : 's'}`;
+    if (!confirm(`Are you sure you want to put all ${countText} in "${folder.name}" on your Branch?`)) {
+      return;
+    }
+
+    if (window.location.protocol === 'file:') {
+      showToast(`[Preview] Put all ${countText} from "${folder.name}" on Branch!`);
+      return;
+    }
+
+    submitItemsToBranch(folderItems, folder.name);
+  }
+
+  async function submitItemsToBranch(items, folderName) {
+    showToast(`Transferring ${items.length} items to your Branch...`);
+
+    try {
+      // Fetch hoard-organisation.php to extract current form structure and security tokens
+      const res = await fetch('/hoard-organisation.php', { credentials: 'include' });
+      if (!res.ok) {
+        throw new Error(`Organisation page returned HTTP ${res.status}`);
+      }
+      const htmlText = await res.text();
+      const doc = new DOMParser().parseFromString(htmlText, 'text/html');
+
+      const origForm = doc.querySelector('form[action*="organisation"]') || doc.querySelector('form');
+      const targetAction = origForm ? (origForm.getAttribute('action') || '/hoard-organisation.php') : '/hoard-organisation.php';
+
+      const submitForm = document.createElement('form');
+      submitForm.method = 'POST';
+      submitForm.action = targetAction;
+
+      // Copy hidden tokens from the page if any exist
+      if (origForm) {
+        origForm.querySelectorAll('input[type="hidden"]').forEach(h => {
+          const inp = document.createElement('input');
+          inp.type = 'hidden';
+          inp.name = h.name;
+          inp.value = h.value;
+          submitForm.appendChild(inp);
+        });
+      }
+
+      // Add item and stack identifiers
+      items.forEach(inv => {
+        const inp = document.createElement('input');
+        inp.type = 'hidden';
+        if (inv.amount > 1) {
+          inp.name = 'stack[]';
+          inp.value = inv.item;
+        } else {
+          inp.name = 'item[]';
+          inp.value = inv.id;
+        }
+        submitForm.appendChild(inp);
+      });
+
+      // Branch action identifier
+      const branchBtn = document.createElement('input');
+      branchBtn.type = 'hidden';
+      branchBtn.name = 'branch';
+      branchBtn.value = 'Put On Branch';
+      submitForm.appendChild(branchBtn);
+
+      document.body.appendChild(submitForm);
+      submitForm.submit();
+    } catch (err) {
+      console.error('[LHO] Branch transfer failed:', err);
+      showToast(`Could not complete branch transfer: ${err.message}`);
+    }
   }
 
   // =========================================================================
