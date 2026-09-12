@@ -1517,6 +1517,9 @@
 
     if (window.location.protocol === 'file:') {
       showToast(`[Preview] Put all ${countText} from "${folder.name}" on Branch!`);
+      const itemSet = new Set(folderItems.map(inv => inv.id || inv.item));
+      hoardData.inventoryData = hoardData.inventoryData.filter(inv => !itemSet.has(inv.id || inv.item));
+      renderOrganizer();
       return;
     }
 
@@ -1524,61 +1527,63 @@
   }
 
   async function submitItemsToBranch(items, folderName) {
+    if (!items || items.length === 0) return;
+
     showToast(`Transferring ${items.length} items to your Branch...`);
 
+    const stackedList = [];
+    const unstackedList = [];
+
+    items.forEach(inv => {
+      if (inv.amount > 1) {
+        stackedList.push(inv.item);
+      } else {
+        unstackedList.push(inv.id);
+      }
+    });
+
+    const formData = new FormData();
+    formData.append('source', 'hoard');
+    formData.append('itemsStacked', stackedList.join(','));
+    formData.append('itemsUnstacked', unstackedList.join(','));
+    formData.append('run', 'branch');
+    formData.append('action', 'Put On Branch');
+
     try {
-      // Fetch hoard-organisation.php to extract current form structure and security tokens
-      const res = await fetch('/hoard-organisation.php', { credentials: 'include' });
-      if (!res.ok) {
-        throw new Error(`Organisation page returned HTTP ${res.status}`);
-      }
-      const htmlText = await res.text();
-      const doc = new DOMParser().parseFromString(htmlText, 'text/html');
-
-      const origForm = doc.querySelector('form[action*="organisation"]') || doc.querySelector('form');
-      const targetAction = origForm ? (origForm.getAttribute('action') || '/hoard-organisation.php') : '/hoard-organisation.php';
-
-      const submitForm = document.createElement('form');
-      submitForm.method = 'POST';
-      submitForm.action = targetAction;
-
-      // Copy hidden tokens from the page if any exist
-      if (origForm) {
-        origForm.querySelectorAll('input[type="hidden"]').forEach(h => {
-          const inp = document.createElement('input');
-          inp.type = 'hidden';
-          inp.name = h.name;
-          inp.value = h.value;
-          submitForm.appendChild(inp);
-        });
-      }
-
-      // Add item and stack identifiers
-      items.forEach(inv => {
-        const inp = document.createElement('input');
-        inp.type = 'hidden';
-        if (inv.amount > 1) {
-          inp.name = 'stack[]';
-          inp.value = inv.item;
-        } else {
-          inp.name = 'item[]';
-          inp.value = inv.id;
-        }
-        submitForm.appendChild(inp);
+      // Send POST request directly to hoard-organisation.php with user session
+      const resp = await fetch('/hoard-organisation.php', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include'
       });
 
-      // Branch action identifier
-      const branchBtn = document.createElement('input');
-      branchBtn.type = 'hidden';
-      branchBtn.name = 'branch';
-      branchBtn.value = 'Put On Branch';
-      submitForm.appendChild(branchBtn);
+      if (resp.ok) {
+        showToast(`Moved ${items.length} items from "${folderName}" to your Branch! 🌿`, 4000);
+        // Reload hoard page so user sees updated inventory immediately
+        setTimeout(() => {
+          window.location.reload();
+        }, 1200);
+      } else {
+        throw new Error(`HTTP ${resp.status}`);
+      }
+    } catch (err) {
+      console.warn('[LHO] Fetch branch transfer failed, falling back to direct form submit:', err);
+
+      // Fallback: standard form POST to hoard-organisation.php
+      const submitForm = document.createElement('form');
+      submitForm.method = 'POST';
+      submitForm.action = '/hoard-organisation.php';
+
+      for (const [key, value] of formData.entries()) {
+        const inp = document.createElement('input');
+        inp.type = 'hidden';
+        inp.name = key;
+        inp.value = value;
+        submitForm.appendChild(inp);
+      }
 
       document.body.appendChild(submitForm);
       submitForm.submit();
-    } catch (err) {
-      console.error('[LHO] Branch transfer failed:', err);
-      showToast(`Could not complete branch transfer: ${err.message}`);
     }
   }
 
