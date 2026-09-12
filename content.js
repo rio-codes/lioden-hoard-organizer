@@ -17,12 +17,7 @@
   const SETTINGS_KEY = 'lioden_hoard_organizer_settings';
 
   // Default Preset Folders
-  const DEFAULT_FOLDERS = [
-    { id: 'f_breeding', name: 'Breeding Items', icon: '🧬', color: '#8E4C2A', createdAt: Date.now() },
-    { id: 'f_decors', name: 'Decors & Backgrounds', icon: '✨', color: '#4E7A36', createdAt: Date.now() + 1 },
-    { id: 'f_food', name: 'Food & Herbs', icon: '🍖', color: '#C78B2A', createdAt: Date.now() + 2 },
-    { id: 'f_toys', name: 'Amusement & Skulls', icon: '🦴', color: '#3D405B', createdAt: Date.now() + 3 }
-  ];
+  const DEFAULT_FOLDERS = [];
 
   const PRESET_ICONS = ['📁', '💎', '🦁', '🍖', '🌿', '✨', '🦴', '🎭', '🧪', '📦', '👑', '🛡️', '🌙', '☀️', '🐾', '🏷️'];
   const PRESET_COLORS = ['#8E4C2A', '#C78B2A', '#4E7A36', '#3D405B', '#A32A2A', '#2B6CB0', '#2C7A7B', '#805AD5', '#4A5568'];
@@ -32,7 +27,7 @@
   let userFolders = [];
   let itemFolderMap = {};     // catalog itemId -> folderId
   let instanceFolderMap = {}; // instanceId -> folderId
-  let activeFolderId = 'all'; // 'all', 'unsorted', or folder.id
+  let activeFolderId = 'unsorted'; // 'all', 'unsorted', or folder.id
   let searchQuery = '';
   let categoryFilter = 'all';
   let sortBy = 'name_asc';
@@ -117,7 +112,7 @@
           instanceFolderMap = data.instanceMap || {};
 
           if (typeof settings.enabled === 'boolean') isFolderViewEnabled = settings.enabled;
-          if (settings.activeFolderId) activeFolderId = settings.activeFolderId;
+          if (settings.activeFolderId) activeFolderId = settings.activeFolderId || 'unsorted';
           if (settings.sortBy) sortBy = settings.sortBy;
           if (settings.pageSize) pageSize = settings.pageSize;
 
@@ -134,7 +129,7 @@
         instanceFolderMap = data.instanceMap || {};
 
         if (typeof settings.enabled === 'boolean') isFolderViewEnabled = settings.enabled;
-        if (settings.activeFolderId) activeFolderId = settings.activeFolderId;
+        if (settings.activeFolderId) activeFolderId = settings.activeFolderId || 'unsorted';
         if (settings.sortBy) sortBy = settings.sortBy;
         if (settings.pageSize) pageSize = settings.pageSize;
 
@@ -321,15 +316,8 @@
       <!-- Folder Navigation Tabs -->
       <div class="lho-tabs-wrapper">
         <div class="lho-tabs-container" id="lho-folder-tabs">
-          <!-- All Items Tab -->
-          <div class="lho-tab ${activeFolderId === 'all' ? 'active' : ''}" data-folder-id="all" title="View all items in hoard">
-            <span class="lho-tab-icon">📦</span>
-            <span>All Items</span>
-            <span class="lho-tab-count">${totalCount}</span>
-          </div>
-
-          <!-- Unsorted Tab -->
-          <div class="lho-tab ${activeFolderId === 'unsorted' ? 'active' : ''}" data-folder-id="unsorted" title="Items not assigned to any folder">
+          <!-- Unsorted Tab (Default View) -->
+          <div class="lho-tab ${activeFolderId === 'unsorted' ? 'active' : ''}" data-folder-id="unsorted" title="Default View: Unsorted items only">
             <span class="lho-tab-icon">📥</span>
             <span>Unsorted</span>
             <span class="lho-tab-count">${unsortedCount}</span>
@@ -348,6 +336,13 @@
               </div>
             `;
           }).join('')}
+
+          <!-- All Items Tab -->
+          <div class="lho-tab ${activeFolderId === 'all' ? 'active' : ''}" data-folder-id="all" title="View all items in hoard including organized items">
+            <span class="lho-tab-icon">📦</span>
+            <span>All Items</span>
+            <span class="lho-tab-count">${totalCount}</span>
+          </div>
         </div>
       </div>
 
@@ -1382,7 +1377,7 @@
     // Reset All Handler
     backdrop.querySelector('#lho-btn-reset-all').addEventListener('click', () => {
       if (confirm('Are you sure you want to reset all folders and item assignments? This cannot be undone.')) {
-        userFolders = JSON.parse(JSON.stringify(DEFAULT_FOLDERS));
+        userFolders = [];
         itemFolderMap = {};
         instanceFolderMap = {};
         activeFolderId = 'all';
