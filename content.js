@@ -991,7 +991,7 @@
       if (btnFolder) {
         btnFolder.addEventListener('click', (e) => {
           e.stopPropagation();
-          showQuickMovePopover(itemId, instanceId, itemName, btnFolder);
+          showQuickMovePopover(itemId, instanceId, itemName, checkVal, btnFolder);
         });
       }
 
@@ -1029,8 +1029,17 @@
   // 8. QUICK MOVE POPOVER MENU
   // =========================================================================
 
-  function showQuickMovePopover(itemId, instanceId, itemName, anchorEl) {
+  function showQuickMovePopover(itemId, instanceId, itemName, checkVal, anchorEl) {
     closeAllPopovers();
+
+    // If multiple items are selected, include the clicked item as well
+    const isMulti = selectedItems.size > 0;
+    if (isMulti && checkVal) {
+      selectedItems.add(String(checkVal));
+    }
+
+    const totalCount = isMulti ? selectedItems.size : 1;
+    const headerText = isMulti ? `Move ${totalCount} Selected Items To:` : `Move To:`;
 
     const popover = document.createElement('div');
     popover.className = 'lho-popover';
@@ -1040,7 +1049,7 @@
     popover.style.left = `${Math.max(10, rect.left + window.scrollX - 100)}px`;
 
     popover.innerHTML = `
-      <div class="lho-popover-header">Move To:</div>
+      <div class="lho-popover-header">${headerText}</div>
       <div class="lho-popover-item" data-folder="unsorted">
         <span>📥</span> <span>Unsorted</span>
       </div>
@@ -1060,19 +1069,40 @@
 
     document.body.appendChild(popover);
 
+    function applyMoveToFolder(targetFolderId) {
+      const targetName = (targetFolderId === 'unsorted' || !targetFolderId)
+        ? 'Unsorted'
+        : (userFolders.find(f => f.id === targetFolderId)?.name || 'Folder');
+
+      if (isMulti) {
+        let movedCount = 0;
+        hoardData.inventoryData.forEach(inv => {
+          const val = String(inv.amount > 1 ? inv.item : inv.id);
+          if (selectedItems.has(val)) {
+            assignItemToFolder(inv.item, inv.id, targetFolderId === 'unsorted' ? null : targetFolderId);
+            movedCount++;
+          }
+        });
+        selectedItems.clear();
+        showToast(`Moved ${movedCount} items to ${targetName}!`);
+      } else {
+        assignItemToFolder(itemId, instanceId, targetFolderId === 'unsorted' ? null : targetFolderId);
+        showToast(`Moved "${itemName}" to ${targetName}!`);
+      }
+
+      closeAllPopovers();
+      renderOrganizer();
+    }
+
     popover.querySelectorAll('.lho-popover-item').forEach(item => {
       item.addEventListener('click', () => {
         const folderId = item.dataset.folder;
         if (folderId) {
-          assignItemToFolder(itemId, instanceId, folderId === 'unsorted' ? null : folderId);
-          showToast(`Moved "${itemName}" to ${folderId === 'unsorted' ? 'Unsorted' : userFolders.find(f => f.id === folderId)?.name}`);
-          closeAllPopovers();
-          renderOrganizer();
+          applyMoveToFolder(folderId);
         } else if (item.dataset.action === 'new-folder') {
           closeAllPopovers();
           showFolderModal(null, (newFolderId) => {
-            assignItemToFolder(itemId, instanceId, newFolderId);
-            renderOrganizer();
+            applyMoveToFolder(newFolderId);
           });
         }
       });
