@@ -1,0 +1,859 @@
+/* ==========================================================================
+   Lioden Hoard Organizer - Stylesheet
+   Matches Lioden theme (#6D381F, #f5ebd7, #d5c7a5) with modern UX enhancements
+   ========================================================================== */
+
+:root {
+  --lho-primary: #6D381F;
+  --lho-primary-dark: #4A2311;
+  --lho-primary-light: #8E4C2A;
+  --lho-accent: #C78B2A;
+  --lho-accent-light: #E7AB48;
+  --lho-bg-cream: #FAF6ED;
+  --lho-bg-card: #FFFFFF;
+  --lho-border: #D5C7A5;
+  --lho-border-dark: #B8A57D;
+  --lho-text: #3D2616;
+  --lho-text-muted: #7A6352;
+  --lho-success: #4E7A36;
+  --lho-danger: #A32A2A;
+  --lho-shadow: 0 2px 8px rgba(74, 35, 17, 0.12);
+  --lho-shadow-hover: 0 4px 14px rgba(74, 35, 17, 0.2);
+}
+
+/* Root Organizer Container */
+#lioden-hoard-organizer {
+  font-family: inherit;
+  margin: 15px 0 25px 0;
+  background: var(--lho-bg-cream);
+  border: 1px solid var(--lho-border);
+  border-radius: 8px;
+  box-shadow: var(--lho-shadow);
+  color: var(--lho-text);
+  overflow: visible;
+  position: relative;
+}
+
+/* Header */
+.lho-header {
+  background: linear-gradient(135deg, var(--lho-primary), var(--lho-primary-dark));
+  color: #FFF;
+  padding: 12px 16px;
+  border-top-left-radius: 7px;
+  border-top-right-radius: 7px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.lho-title-area {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.lho-title {
+  font-size: 17px;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #FFF;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.4);
+}
+
+.lho-stats-pill {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  letter-spacing: 0.3px;
+  color: #FFF;
+}
+
+.lho-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Buttons */
+.lho-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 5px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+  text-decoration: none !important;
+  line-height: 1.4;
+  user-select: none;
+}
+
+.lho-btn-primary {
+  background: var(--lho-accent);
+  color: #FFF !important;
+  border-color: #A36F1A;
+}
+.lho-btn-primary:hover {
+  background: var(--lho-accent-light);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.lho-btn-secondary {
+  background: rgba(255, 255, 255, 0.15);
+  color: #FFF !important;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+.lho-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.lho-btn-outline {
+  background: #FFF;
+  color: var(--lho-text) !important;
+  border-color: var(--lho-border-dark);
+}
+.lho-btn-outline:hover {
+  background: #F3ECE0;
+  border-color: var(--lho-primary);
+}
+
+.lho-btn-danger {
+  background: var(--lho-danger);
+  color: #FFF !important;
+}
+.lho-btn-danger:hover {
+  background: #BF3434;
+}
+
+.lho-btn-sm {
+  padding: 3px 8px;
+  font-size: 11px;
+}
+
+/* Folder Tabs Navigation */
+.lho-tabs-wrapper {
+  background: #EFE7D8;
+  border-bottom: 1px solid var(--lho-border);
+  padding: 8px 12px;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.lho-tabs-container {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.lho-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: #FFF;
+  border: 1px solid var(--lho-border);
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--lho-text);
+  transition: all 0.2s ease;
+  user-select: none;
+  position: relative;
+}
+
+.lho-tab:hover {
+  border-color: var(--lho-accent);
+  background: #FFFAF2;
+  transform: translateY(-1px);
+}
+
+.lho-tab.active {
+  background: var(--lho-primary);
+  color: #FFF;
+  border-color: var(--lho-primary-dark);
+  box-shadow: 0 2px 6px rgba(109, 56, 31, 0.3);
+}
+
+.lho-tab.active .lho-tab-count {
+  background: rgba(255, 255, 255, 0.25);
+  color: #FFF;
+}
+
+.lho-tab-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.lho-tab-icon {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.lho-tab-count {
+  background: #E7DDCA;
+  color: var(--lho-text);
+  padding: 1px 7px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: bold;
+}
+
+/* Drag over folder tab */
+.lho-tab.drag-over {
+  border: 2px dashed var(--lho-accent) !important;
+  background: #FFF3D6 !important;
+  color: var(--lho-primary) !important;
+  transform: scale(1.06);
+  box-shadow: 0 0 10px rgba(199, 139, 42, 0.5);
+}
+
+.lho-tab-menu-btn {
+  margin-left: 2px;
+  opacity: 0.6;
+  padding: 0 2px;
+  font-size: 12px;
+  border-radius: 3px;
+  cursor: pointer;
+}
+.lho-tab-menu-btn:hover {
+  opacity: 1;
+  background: rgba(0,0,0,0.1);
+}
+
+/* Active Folder Banner */
+.lho-folder-banner {
+  padding: 8px 16px;
+  background: #F4ECE1;
+  border-bottom: 1px solid var(--lho-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+}
+
+.lho-folder-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.lho-folder-name-lg {
+  font-size: 15px;
+  font-weight: bold;
+  color: var(--lho-primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Toolbar & Filters */
+.lho-toolbar {
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  background: #FAF6ED;
+  border-bottom: 1px solid var(--lho-border);
+}
+
+.lho-filter-group {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.lho-input-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.lho-search-input {
+  padding: 5px 28px 5px 28px;
+  font-size: 12px;
+  border: 1px solid var(--lho-border-dark);
+  border-radius: 16px;
+  background: #FFF;
+  color: var(--lho-text);
+  width: 200px;
+  transition: all 0.2s ease;
+}
+.lho-search-input:focus {
+  outline: none;
+  border-color: var(--lho-accent);
+  width: 240px;
+  box-shadow: 0 0 5px rgba(199, 139, 42, 0.3);
+}
+
+.lho-search-icon {
+  position: absolute;
+  left: 9px;
+  color: var(--lho-text-muted);
+  pointer-events: none;
+  font-size: 12px;
+}
+
+.lho-search-clear {
+  position: absolute;
+  right: 8px;
+  cursor: pointer;
+  color: var(--lho-text-muted);
+  font-size: 13px;
+  display: none;
+}
+.lho-search-clear:hover {
+  color: var(--lho-danger);
+}
+
+.lho-select {
+  padding: 5px 8px;
+  font-size: 12px;
+  border: 1px solid var(--lho-border-dark);
+  border-radius: 5px;
+  background: #FFF;
+  color: var(--lho-text);
+  cursor: pointer;
+}
+.lho-select:focus {
+  outline: none;
+  border-color: var(--lho-accent);
+}
+
+/* Multi-select Bulk Actions Bar */
+.lho-bulk-bar {
+  background: #FFF5E0;
+  border-bottom: 1px solid #E2D3B3;
+  padding: 8px 16px;
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  animation: lhoSlideDown 0.2s ease;
+}
+
+.lho-bulk-bar.visible {
+  display: flex;
+}
+
+@keyframes lhoSlideDown {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.lho-bulk-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Item Grid & Cards */
+.lho-items-section {
+  padding: 16px;
+  min-height: 250px;
+}
+
+.lho-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(116px, 1fr));
+  gap: 12px;
+}
+
+.lho-card {
+  background: #FFF;
+  border: 1px solid var(--lho-border);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 6px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  position: relative;
+  user-select: none;
+}
+
+.lho-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--lho-shadow-hover);
+  border-color: var(--lho-accent);
+}
+
+.lho-card.selected {
+  border-color: var(--lho-primary);
+  background: #FFFBF5;
+  box-shadow: 0 0 0 2px rgba(109, 56, 31, 0.25);
+}
+
+.lho-card.dragging {
+  opacity: 0.45;
+  transform: scale(0.95);
+}
+
+/* Card Header */
+.lho-card-header {
+  font-size: 11px;
+  font-weight: bold;
+  color: var(--lho-primary);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 4px;
+  line-height: 1.2;
+  height: 14px;
+}
+
+/* Card Image Area */
+.lho-card-img-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  margin: 4px 0;
+  cursor: pointer;
+}
+
+.lho-card-img {
+  width: 90px;
+  height: 90px;
+  object-fit: contain;
+  border: 0;
+  transition: transform 0.15s ease;
+}
+
+.lho-card:hover .lho-card-img {
+  transform: scale(1.04);
+}
+
+/* Stack / Use Info */
+.lho-card-meta {
+  font-size: 10px;
+  text-align: center;
+  color: var(--lho-text-muted);
+  line-height: 1.2;
+  min-height: 24px;
+}
+
+.lho-meta-expire {
+  color: var(--lho-danger);
+  font-weight: bold;
+}
+
+.lho-meta-uses {
+  font-style: italic;
+}
+
+/* Card Footer */
+.lho-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid #F0E8D9;
+  padding-top: 4px;
+  margin-top: 4px;
+  font-size: 10px;
+}
+
+.lho-card-check {
+  cursor: pointer;
+  margin: 0;
+}
+
+.lho-card-link {
+  font-weight: bold;
+  color: var(--lho-primary) !important;
+  text-decoration: none !important;
+}
+.lho-card-link:hover {
+  color: var(--lho-accent) !important;
+  text-decoration: underline !important;
+}
+
+.lho-card-folder-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 1px 3px;
+  font-size: 11px;
+  color: var(--lho-text-muted);
+  border-radius: 3px;
+  transition: all 0.15s ease;
+}
+.lho-card-folder-btn:hover {
+  background: #EFE7D8;
+  color: var(--lho-primary);
+}
+
+/* Folder Tag badge on card (visible in 'All Items' view) */
+.lho-card-folder-tag {
+  font-size: 9px;
+  padding: 1px 5px;
+  border-radius: 8px;
+  display: inline-block;
+  max-width: 90px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-top: 2px;
+  font-weight: 600;
+}
+
+/* Empty State */
+.lho-empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--lho-text-muted);
+}
+.lho-empty-icon {
+  font-size: 40px;
+  margin-bottom: 10px;
+}
+.lho-empty-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: var(--lho-primary);
+  margin-bottom: 6px;
+}
+.lho-empty-desc {
+  font-size: 12px;
+  max-width: 400px;
+  margin: 0 auto 15px auto;
+}
+
+/* Pagination within Folder Organizer */
+.lho-pagination-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  background: #F4ECE1;
+  border-top: 1px solid var(--lho-border);
+  border-bottom-left-radius: 7px;
+  border-bottom-right-radius: 7px;
+  font-size: 12px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.lho-page-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.lho-page-btn {
+  padding: 3px 8px;
+  border: 1px solid var(--lho-border-dark);
+  background: #FFF;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--lho-text);
+  min-width: 24px;
+  text-align: center;
+}
+.lho-page-btn:hover {
+  background: #F0E6D5;
+  border-color: var(--lho-accent);
+}
+.lho-page-btn.active {
+  background: var(--lho-primary);
+  color: #FFF;
+  border-color: var(--lho-primary-dark);
+}
+.lho-page-btn.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Quick Move Popover Menu */
+.lho-popover {
+  position: absolute;
+  z-index: 10000;
+  background: #FFF;
+  border: 1px solid var(--lho-border-dark);
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  padding: 6px 0;
+  min-width: 170px;
+  max-height: 250px;
+  overflow-y: auto;
+  font-size: 12px;
+  animation: lhoFadeIn 0.15s ease;
+}
+
+@keyframes lhoFadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.lho-popover-header {
+  padding: 4px 10px;
+  font-weight: bold;
+  font-size: 11px;
+  color: var(--lho-primary);
+  border-bottom: 1px solid #F0E8D9;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.lho-popover-item {
+  padding: 6px 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--lho-text);
+  transition: background 0.12s ease;
+}
+.lho-popover-item:hover {
+  background: #F5EFE4;
+  color: var(--lho-primary);
+}
+
+.lho-popover-divider {
+  height: 1px;
+  background: #F0E8D9;
+  margin: 4px 0;
+}
+
+/* Modals */
+.lho-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(40, 20, 10, 0.6);
+  backdrop-filter: blur(2px);
+  z-index: 99999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+.lho-modal {
+  background: #FAF6ED;
+  border: 2px solid var(--lho-border);
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+  width: 100%;
+  max-width: 480px;
+  overflow: hidden;
+  color: var(--lho-text);
+  animation: lhoModalIn 0.2s ease;
+}
+
+@keyframes lhoModalIn {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.lho-modal-header {
+  background: var(--lho-primary);
+  color: #FFF;
+  padding: 12px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: bold;
+  font-size: 15px;
+}
+
+.lho-modal-close {
+  background: none;
+  border: none;
+  color: #FFF;
+  font-size: 18px;
+  cursor: pointer;
+  opacity: 0.8;
+  line-height: 1;
+}
+.lho-modal-close:hover {
+  opacity: 1;
+}
+
+.lho-modal-body {
+  padding: 18px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.lho-form-group {
+  margin-bottom: 14px;
+}
+
+.lho-form-label {
+  display: block;
+  font-weight: bold;
+  font-size: 12px;
+  margin-bottom: 5px;
+  color: var(--lho-primary);
+}
+
+.lho-form-input {
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid var(--lho-border-dark);
+  border-radius: 5px;
+  background: #FFF;
+  font-size: 13px;
+  box-sizing: border-box;
+}
+.lho-form-input:focus {
+  outline: none;
+  border-color: var(--lho-accent);
+}
+
+.lho-color-palette {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.lho-color-swatch {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: transform 0.15s ease;
+}
+.lho-color-swatch:hover {
+  transform: scale(1.15);
+}
+.lho-color-swatch.selected {
+  border-color: #333;
+  box-shadow: 0 0 0 2px #FFF inset;
+  transform: scale(1.15);
+}
+
+.lho-icon-palette {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.lho-icon-choice {
+  font-size: 20px;
+  padding: 4px 8px;
+  border: 1px solid var(--lho-border);
+  border-radius: 6px;
+  background: #FFF;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.lho-icon-choice:hover {
+  background: #F0E6D5;
+  border-color: var(--lho-accent);
+}
+.lho-icon-choice.selected {
+  background: var(--lho-accent);
+  border-color: var(--lho-accent-light);
+  color: #FFF;
+}
+
+.lho-modal-footer {
+  padding: 12px 18px;
+  background: #EFE7D8;
+  border-top: 1px solid var(--lho-border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* Custom Tooltip */
+.lho-tooltip {
+  position: fixed;
+  z-index: 100000;
+  background: rgba(35, 18, 9, 0.95);
+  color: #FFF;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  line-height: 1.4;
+  max-width: 250px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  pointer-events: none;
+  border: 1px solid #8E4C2A;
+  animation: lhoFadeIn 0.12s ease;
+}
+
+.lho-tooltip-title {
+  font-weight: bold;
+  color: #F8D38D;
+  margin-bottom: 3px;
+  font-size: 12px;
+}
+
+/* Toast Notifications */
+.lho-toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 100001;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lho-toast {
+  background: var(--lho-primary-dark);
+  color: #FFF;
+  padding: 9px 16px;
+  border-radius: 6px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+  font-size: 12px;
+  font-weight: 600;
+  border-left: 4px solid var(--lho-accent);
+  animation: lhoSlideInRight 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+@keyframes lhoSlideInRight {
+  from { opacity: 0; transform: translateX(30px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* Classic view indicator badge */
+.lho-classic-banner {
+  background: #F5EFE4;
+  border: 1px dashed var(--lho-border-dark);
+  border-radius: 6px;
+  padding: 8px 14px;
+  margin: 10px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+}
+
+/* Hidden helper class */
+.lho-hidden {
+  display: none !important;
+}

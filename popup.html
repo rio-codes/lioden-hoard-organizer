@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Lioden Hoard Organizer</title>
+  <style>
+    :root {
+      --primary: #6D381F;
+      --primary-dark: #4A2311;
+      --accent: #C78B2A;
+      --bg: #FAF6ED;
+      --border: #D5C7A5;
+      --text: #3D2616;
+      --text-muted: #7A6352;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      width: 320px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 13px;
+    }
+
+    .header {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: #FFF;
+      padding: 12px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .header-title {
+      font-size: 14px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .header-version {
+      font-size: 10px;
+      opacity: 0.8;
+      background: rgba(255,255,255,0.2);
+      padding: 2px 6px;
+      border-radius: 10px;
+    }
+
+    .content {
+      padding: 14px;
+    }
+
+    .stats-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .stat-card {
+      background: #FFF;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px;
+      text-align: center;
+    }
+
+    .stat-val {
+      font-size: 18px;
+      font-weight: bold;
+      color: var(--primary);
+    }
+
+    .stat-lbl {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .section-title {
+      font-size: 11px;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--primary);
+      margin-bottom: 6px;
+    }
+
+    .folder-list {
+      max-height: 140px;
+      overflow-y: auto;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: #FFF;
+      margin-bottom: 12px;
+    }
+
+    .folder-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 10px;
+      border-bottom: 1px solid #F2EBDE;
+      font-size: 12px;
+    }
+    .folder-item:last-child {
+      border-bottom: none;
+    }
+
+    .folder-name-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .folder-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .folder-badge {
+      background: #EFE7D8;
+      padding: 1px 6px;
+      border-radius: 8px;
+      font-size: 10px;
+      font-weight: bold;
+      color: var(--text);
+    }
+
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .btn {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 6px;
+      width: 100%;
+      padding: 7px;
+      border: 1px solid transparent;
+      border-radius: 5px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none !important;
+      transition: all 0.15s ease;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #FFF !important;
+    }
+    .btn-primary:hover {
+      background: #D89832;
+    }
+
+    .btn-outline {
+      background: #FFF;
+      color: var(--text) !important;
+      border-color: var(--border);
+    }
+    .btn-outline:hover {
+      background: #F2E9DA;
+    }
+
+    .footer-tip {
+      font-size: 10px;
+      color: var(--text-muted);
+      text-align: center;
+      margin-top: 10px;
+      line-height: 1.3;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-title">
+      <span>🦁</span>
+      <span>Lioden Hoard Organizer</span>
+    </div>
+    <span class="header-version">v1.0</span>
+  </div>
+
+  <div class="content">
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-val" id="stat-folders">0</div>
+        <div class="stat-lbl">Custom Folders</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" id="stat-mapped">0</div>
+        <div class="stat-lbl">Assigned Items</div>
+      </div>
+    </div>
+
+    <div class="section-title">Your Folders</div>
+    <div class="folder-list" id="popup-folder-list">
+      <div style="padding: 10px; text-align: center; color: var(--text-muted); font-size: 11px;">
+        Loading folders...
+      </div>
+    </div>
+
+    <div class="actions">
+      <a href="https://www.lioden.com/hoard.php" target="_blank" class="btn btn-primary">
+        🦁 Open Lioden Hoard
+      </a>
+      <button type="button" class="btn btn-outline" id="btn-export-backup">
+        📥 Export Backup (JSON)
+      </button>
+    </div>
+
+    <div class="footer-tip">
+      Visit <b>hoard.php</b> to create folders, drag &amp; drop items, and search your aggregated hoard!
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
