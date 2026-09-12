@@ -1191,7 +1191,7 @@
         <div class="lho-modal-body">
           <div class="lho-form-group">
             <label class="lho-form-label">Folder Name</label>
-            <input type="text" class="lho-form-input" id="lho-folder-name-input" placeholder="e.g. Breeding applicators, Favorite decors..." value="${isEdit ? escapeHtml(existingFolder.name) : ''}">
+            <input type="text" class="lho-form-input" id="lho-folder-name-input" placeholder="e.g. Breeding items, Applicators, Favorite decors..." value="${isEdit ? escapeHtml(existingFolder.name) : ''}">
           </div>
 
           <div class="lho-form-group">
