@@ -40,7 +40,12 @@
   ],
   "browser_specific_settings": {
     "gecko": {
-      "id": "lioden-hoard-organizer@antigravity"
+      "id": "lioden-hoard-organizer@antigravity",
+      "data_collection_permissions": {
+        "required": [
+          "none"
+        ]
+      }
     }
   }
 }
