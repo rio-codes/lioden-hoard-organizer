@@ -1025,3 +1025,197 @@
   border-color: var(--lho-accent);
   color: var(--lho-primary);
 }
+
+/* ==========================================================================
+   11. MOBILE & RESPONSIVE STYLES
+   Optimized for mobile browsers (Kiwi, Lemur, Firefox Android, Orion)
+   ========================================================================== */
+
+@media (max-width: 768px) {
+  /* Header */
+  .lho-header {
+    padding: 10px 12px;
+  }
+  .lho-title {
+    font-size: 15px;
+  }
+  .lho-stats-pill {
+    font-size: 10px;
+    padding: 2px 8px;
+  }
+
+  /* Folder Tabs */
+  .lho-tabs-wrapper {
+    padding: 8px 10px;
+  }
+  .lho-tabs-container {
+    gap: 6px 4px;
+  }
+  .lho-tab {
+    padding: 7px 13px;
+    font-size: 12.5px;
+    min-height: 36px;
+    box-sizing: border-box;
+  }
+  .lho-tab-menu-btn {
+    padding: 4px 6px;
+    font-size: 14px;
+    margin-left: 4px;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  /* Toolbar */
+  .lho-toolbar {
+    padding: 10px 12px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .lho-filter-group {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  .lho-input-wrapper {
+    width: 100%;
+  }
+  .lho-search-input {
+    width: 100% !important;
+    box-sizing: border-box;
+    font-size: 13px;
+    padding: 7px 28px;
+  }
+  .lho-select {
+    padding: 6px 8px;
+    font-size: 12px;
+    min-height: 34px;
+  }
+
+  /* Clearance for Sticky Bottom Bulk Bar */
+  #lioden-hoard-organizer.lho-bulk-active {
+    padding-bottom: 110px;
+  }
+
+  /* Sticky Bottom Bulk Bar */
+  .lho-bulk-bar.visible {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 99990;
+    background: #FFF8EA;
+    border-top: 2px solid var(--lho-accent);
+    box-shadow: 0 -4px 18px rgba(74, 35, 17, 0.25);
+    padding: 10px 14px;
+    padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    animation: lhoSlideUp 0.2s ease;
+  }
+
+  @keyframes lhoSlideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .lho-bulk-actions {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+  }
+  .lho-bulk-actions .lho-select {
+    flex: 1;
+    min-width: 130px;
+  }
+  .lho-bulk-actions .lho-btn {
+    min-height: 34px;
+    padding: 6px 10px;
+  }
+
+  /* Item Cards Grid */
+  .lho-items-section {
+    padding: 10px;
+  }
+  .lho-grid {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 10px;
+  }
+
+  /* Touch Targets on Cards */
+  .lho-card-check {
+    transform: scale(1.35);
+    margin: 3px 5px 3px 2px;
+  }
+  .lho-card-folder-btn {
+    padding: 4px 8px;
+    font-size: 13px;
+    min-height: 30px;
+    display: inline-flex;
+    align-items: center;
+    background: #F8F2E6;
+  }
+
+  /* Modal Mobile Adaptations */
+  .lho-modal {
+    max-width: 95vw !important;
+    max-height: 90vh;
+  }
+  .lho-modal-body {
+    max-height: 68vh;
+    padding: 14px;
+  }
+  .lho-color-swatch {
+    width: 32px;
+    height: 32px;
+  }
+  .lho-emoji-btn {
+    font-size: 24px;
+    height: 40px;
+  }
+
+  /* Popover Mobile Clamping */
+  .lho-popover {
+    max-width: 92vw;
+    font-size: 13px;
+  }
+  .lho-popover-item {
+    padding: 9px 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Extra compact for narrow phones */
+  .lho-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  .lho-card {
+    padding: 6px 5px;
+  }
+  .lho-card-img {
+    width: 75px;
+    height: 75px;
+  }
+  .lho-card-header {
+    font-size: 10.5px;
+  }
+  .lho-folder-banner {
+    padding: 8px 12px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+  .lho-pagination-bar {
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .lho-header-actions {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+}

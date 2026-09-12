@@ -1098,20 +1098,46 @@
   function updateBulkBar() {
     const bar = document.getElementById('lho-bulk-bar');
     const countEl = document.getElementById('lho-selected-count');
+    const root = document.getElementById('lioden-hoard-organizer');
     if (!bar || !countEl) return;
 
     const count = selectedItems.size;
     countEl.textContent = count;
     if (count > 0) {
       bar.classList.add('visible');
+      if (root) root.classList.add('lho-bulk-active');
     } else {
       bar.classList.remove('visible');
+      if (root) root.classList.remove('lho-bulk-active');
     }
   }
 
   // =========================================================================
-  // 8. QUICK MOVE POPOVER MENU
+  // 8. QUICK MOVE POPOVER MENU & POPOVER POSITIONING
   // =========================================================================
+
+  function positionPopover(popover, anchorEl, alignOffset = 0) {
+    document.body.appendChild(popover);
+    const rect = anchorEl.getBoundingClientRect();
+    const popoverWidth = popover.offsetWidth || 190;
+    const popoverHeight = popover.offsetHeight || 150;
+
+    // Vertical positioning: flip above anchor if overflowing viewport bottom
+    let top = rect.bottom + window.scrollY + 4;
+    if (rect.bottom + popoverHeight > window.innerHeight && rect.top - popoverHeight > 0) {
+      top = rect.top + window.scrollY - popoverHeight - 4;
+    }
+
+    // Horizontal positioning: align to anchor, clamped within screen margins
+    let left = rect.left + window.scrollX + alignOffset;
+    const clientWidth = document.documentElement.clientWidth || window.innerWidth;
+    const minLeft = window.scrollX + 8;
+    const maxLeft = window.scrollX + clientWidth - popoverWidth - 8;
+    left = Math.max(minLeft, Math.min(left, maxLeft));
+
+    popover.style.top = `${top}px`;
+    popover.style.left = `${left}px`;
+  }
 
   function showQuickMovePopover(itemId, instanceId, itemName, checkVal, anchorEl) {
     closeAllPopovers();
@@ -1127,10 +1153,6 @@
 
     const popover = document.createElement('div');
     popover.className = 'lho-popover';
-
-    const rect = anchorEl.getBoundingClientRect();
-    popover.style.top = `${rect.bottom + window.scrollY + 4}px`;
-    popover.style.left = `${Math.max(10, rect.left + window.scrollX - 100)}px`;
 
     popover.innerHTML = `
       <div class="lho-popover-header">${headerText}</div>
@@ -1151,7 +1173,7 @@
       </div>
     `;
 
-    document.body.appendChild(popover);
+    positionPopover(popover, anchorEl, -80);
 
     function applyMoveToFolder(targetFolderId) {
       const targetName = (targetFolderId === 'unsorted' || !targetFolderId)
@@ -1201,15 +1223,11 @@
     setTimeout(() => document.addEventListener('click', closeHandler), 10);
   }
 
-    function showFolderSortMenu(anchorEl) {
+  function showFolderSortMenu(anchorEl) {
     closeAllPopovers();
 
     const popover = document.createElement('div');
     popover.className = 'lho-popover';
-
-    const rect = anchorEl.getBoundingClientRect();
-    popover.style.top = `${rect.bottom + window.scrollY + 4}px`;
-    popover.style.left = `${Math.max(10, rect.left + window.scrollX - 40)}px`;
 
     popover.innerHTML = `
       <div class="lho-popover-header">Sort Folders:</div>
@@ -1228,7 +1246,7 @@
       </div>
     `;
 
-    document.body.appendChild(popover);
+    positionPopover(popover, anchorEl, -40);
 
     popover.querySelectorAll('.lho-popover-item').forEach(item => {
       item.addEventListener('click', () => {
@@ -1264,32 +1282,71 @@
   function showFolderActionsMenu(folderId, anchorEl) {
     closeAllPopovers();
 
-    const folder = userFolders.find(f => f.id === folderId);
-    if (!folder) return;
+    const folderIdx = userFolders.findIndex(f => f.id === folderId);
+    if (folderIdx === -1) return;
+    const folder = userFolders[folderIdx];
+
+    const canMoveLeft = folderIdx > 0;
+    const canMoveRight = folderIdx < userFolders.length - 1;
 
     const popover = document.createElement('div');
     popover.className = 'lho-popover';
-
-    const rect = anchorEl.getBoundingClientRect();
-    popover.style.top = `${rect.bottom + window.scrollY + 4}px`;
-    popover.style.left = `${rect.left + window.scrollX - 60}px`;
 
     popover.innerHTML = `
       <div class="lho-popover-header">${escapeHtml(folder.name)}</div>
       <div class="lho-popover-item" data-action="edit">
         <span>✏️</span> <span>Edit Folder</span>
       </div>
+      ${canMoveLeft ? `
+        <div class="lho-popover-item" data-action="move-left">
+          <span>⬅️</span> <span>Move Left</span>
+        </div>
+      ` : ''}
+      ${canMoveRight ? `
+        <div class="lho-popover-item" data-action="move-right">
+          <span>➡️</span> <span>Move Right</span>
+        </div>
+      ` : ''}
+      <div class="lho-popover-divider"></div>
       <div class="lho-popover-item" data-action="delete" style="color: var(--lho-danger);">
         <span>🗑️</span> <span>Delete Folder</span>
       </div>
     `;
 
-    document.body.appendChild(popover);
+    positionPopover(popover, anchorEl, -60);
 
     popover.querySelector('[data-action="edit"]').addEventListener('click', () => {
       closeAllPopovers();
       showFolderModal(folder);
     });
+
+    const moveLeftBtn = popover.querySelector('[data-action="move-left"]');
+    if (moveLeftBtn) {
+      moveLeftBtn.addEventListener('click', () => {
+        closeAllPopovers();
+        if (folderIdx > 0) {
+          const [moved] = userFolders.splice(folderIdx, 1);
+          userFolders.splice(folderIdx - 1, 0, moved);
+          saveStorageData();
+          showToast(`Moved "${moved.name}" left!`);
+          renderOrganizer();
+        }
+      });
+    }
+
+    const moveRightBtn = popover.querySelector('[data-action="move-right"]');
+    if (moveRightBtn) {
+      moveRightBtn.addEventListener('click', () => {
+        closeAllPopovers();
+        if (folderIdx < userFolders.length - 1) {
+          const [moved] = userFolders.splice(folderIdx, 1);
+          userFolders.splice(folderIdx + 1, 0, moved);
+          saveStorageData();
+          showToast(`Moved "${moved.name}" right!`);
+          renderOrganizer();
+        }
+      });
+    }
 
     popover.querySelector('[data-action="delete"]').addEventListener('click', () => {
       closeAllPopovers();
@@ -1710,6 +1767,7 @@
     tooltipEl = document.createElement('div');
     tooltipEl.className = 'lho-tooltip lho-hidden';
     document.body.appendChild(tooltipEl);
+    document.addEventListener('touchstart', hideTooltip, { passive: true });
   }
 
   function showTooltip(title, description, e) {
