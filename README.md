@@ -37,6 +37,32 @@ A standalone browser extension (Manifest V3) for [Lioden](https://www.lioden.com
 3. Select the `manifest.json` file inside the `lioden-hoard-sorter` folder.
 4. Navigate to [Lioden Hoard](https://www.lioden.com/hoard.php).
 
+### Orion (iOS / iPadOS)
+
+1. Download the release `.zip` file (e.g., `lioden-hoard-organizer-v1.0.0.zip`) and save it to the **Files** app. *(Do not tap the file in Files to unzip it; Orion requires the `.zip` archive directly).*
+2. Open **Orion**.
+3. Tap the **•••** menu in the bottom-right (or top-right on iPad) -> **Settings**.
+4. Scroll down to **Extensions** and ensure extension support is toggled **ON**.
+5. Tap **•••** -> **Extensions**.
+6. Tap the **+** button in the top-right corner.
+7. Select the `lioden-hoard-organizer-v1.0.0.zip` file from the Files picker.
+8. Navigate to [Lioden Hoard](https://www.lioden.com/hoard.php).
+
+### Orion (macOS)
+
+1. Download and unzip `lioden-hoard-organizer-v1.0.0.zip`.
+2. Open Orion and click **Tools** -> **Extensions** -> **Add Extension** (or **Install from Disk...**).
+3. Select the unzipped folder containing `manifest.json`.
+4. Navigate to [Lioden Hoard](https://www.lioden.com/hoard.php).
+
+### Android (Kiwi Browser / Lemur Browser)
+
+1. Open Kiwi Browser or Lemur Browser.
+2. Tap the three dots **(⋮)** -> **Extensions**.
+3. Enable **Developer mode**.
+4. Tap **+(from .zip/.crx/.user.js)** and select `lioden-hoard-organizer-v1.0.0.zip`.
+5. Navigate to [Lioden Hoard](https://www.lioden.com/hoard.php).
+
 ---
 
 ## Local Preview / Testing Without Login
