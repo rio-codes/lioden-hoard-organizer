@@ -130,6 +130,14 @@
       const itemData = JSON.parse(rawItem);
       const inventoryData = JSON.parse(rawInv);
 
+      // Decode HTML entities in item catalog
+      for (const id in itemData) {
+        const it = itemData[id];
+        if (it.name) it.name = decodeHtml(it.name);
+        if (it.nameClean) it.nameClean = decodeHtml(it.nameClean);
+        if (it.description) it.description = decodeHtml(it.description);
+      }
+
       // Pre-process items
       for (let i = 0; i < inventoryData.length; i++) {
         const inv = inventoryData[i];
@@ -1412,7 +1420,7 @@
       const imgWrap = card.querySelector('.lho-card-img-wrap');
       if (imgWrap) {
         imgWrap.addEventListener('mouseenter', (e) => {
-          showTooltip(card.dataset.cleanName || card.dataset.name, card.dataset.description, e);
+          showTooltip(card.dataset.name || card.dataset.cleanName, card.dataset.description, e);
         });
         imgWrap.addEventListener('mousemove', (e) => {
           updateTooltipPos(e);
@@ -2477,10 +2485,19 @@
 
   function showTooltip(title, description, e) {
     if (!tooltipEl) initTooltip();
-    tooltipEl.innerHTML = `
-      <div class="lho-tooltip-title">${escapeHtml(title)}</div>
-      <div>${description || ''}</div>
-    `;
+    tooltipEl.textContent = '';
+
+    const titleEl = document.createElement('div');
+    titleEl.className = 'lho-tooltip-title';
+    titleEl.textContent = decodeHtml(title);
+    tooltipEl.appendChild(titleEl);
+
+    if (description) {
+      const descEl = document.createElement('div');
+      descEl.textContent = decodeHtml(description);
+      tooltipEl.appendChild(descEl);
+    }
+
     tooltipEl.classList.remove('lho-hidden');
     updateTooltipPos(e);
   }
@@ -2540,6 +2557,22 @@
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#039;');
+  }
+
+  function decodeHtml(str) {
+    if (!str) return '';
+    let result = String(str);
+    result = result.replace(/&amp;#0*39;|&amp;apos;/g, "'");
+    result = result.replace(/&amp;quot;/g, '"');
+    result = result.replace(/&amp;lt;/g, '<');
+    result = result.replace(/&amp;gt;/g, '>');
+    result = result.replace(/&amp;amp;/g, '&');
+    result = result.replace(/&#0*39;|&apos;/g, "'");
+    result = result.replace(/&quot;/g, '"');
+    result = result.replace(/&lt;/g, '<');
+    result = result.replace(/&gt;/g, '>');
+    result = result.replace(/&amp;/g, '&');
+    return result;
   }
 
   // =========================================================================
