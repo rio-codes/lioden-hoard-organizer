@@ -244,6 +244,37 @@
   font-size: 12px;
 }
 
+/* Buried Mode Notice Banner */
+.lho-buried-banner {
+  padding: 10px 16px;
+  background: #ECE0D1;
+  border-bottom: 1px solid #8B6645;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12.5px;
+  color: #4A331E;
+  gap: 12px;
+}
+
+.lho-buried-banner-text {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.lho-buried-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.lho-buried-banner a {
+  color: #2F4C6E;
+  font-weight: bold;
+  text-decoration: underline;
+  white-space: nowrap;
+}
+
 .lho-folder-info {
   display: flex;
   align-items: center;

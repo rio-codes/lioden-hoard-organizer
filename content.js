@@ -42,6 +42,53 @@
   // Active Tooltip element
   let tooltipEl = null;
 
+  // Buried vs Hoard Simulation State (for file: preview)
+  let simulatedActiveInventory = null;
+  let simulatedBuriedInventory = null;
+
+  function checkIsBuriedPage() {
+    if (window.location.protocol === 'file:') {
+      return window.location.hash === '#buried';
+    }
+    return new URLSearchParams(window.location.search).get('page') === 'buried';
+  }
+
+  function initSimulatedInventories() {
+    if (window.location.protocol === 'file:' && !simulatedActiveInventory && hoardData) {
+      simulatedActiveInventory = [...hoardData.inventoryData];
+      if (simulatedActiveInventory.length > 3) {
+        simulatedBuriedInventory = simulatedActiveInventory.splice(simulatedActiveInventory.length - 3, 3);
+      } else {
+        simulatedBuriedInventory = [];
+      }
+    }
+  }
+
+  function getCurrentInventory() {
+    if (window.location.protocol === 'file:') {
+      initSimulatedInventories();
+      return checkIsBuriedPage() ? (simulatedBuriedInventory || []) : (simulatedActiveInventory || []);
+    }
+    return hoardData ? hoardData.inventoryData : [];
+  }
+
+  function getNativeInputInfo(type) {
+    if (type === 'bury') {
+      const native = document.querySelector('input[value*="Bury Checked"], input[name="buryall"]');
+      return { name: native ? native.name : 'buryall', value: native ? native.value : 'Bury Checked' };
+    } else if (type === 'bury-all') {
+      const native = document.querySelector('input[value*="Bury Everything"], input[name="buryhoard"]');
+      return { name: native ? native.name : 'buryhoard', value: native ? native.value : 'Bury Everything' };
+    } else if (type === 'dig') {
+      const native = document.querySelector('input[value*="Dig Up Checked"], input[value*="Dig Up"], input[name="digall"]');
+      return { name: native ? native.name : 'digall', value: native ? native.value : 'Dig Up Checked' };
+    } else if (type === 'dig-all') {
+      const native = document.querySelector('input[value*="Dig Up Everything"], input[name="dighoard"], input[name="digeverything"]');
+      return { name: native ? native.name : 'dighoard', value: native ? native.value : 'Dig Up Everything' };
+    }
+    return { name: 'submit', value: 'Submit' };
+  }
+
   // =========================================================================
   // 1. DATA EXTRACTION FROM LIODEN PAGE
   // =========================================================================
@@ -189,8 +236,8 @@
   }
 
   function countFolderItems(folderId) {
-    if (!hoardData) return 0;
-    return hoardData.inventoryData.filter(inv => {
+    const invList = getCurrentInventory();
+    return invList.filter(inv => {
       const f = getItemFolder(inv);
       if (folderId === 'all') return true;
       if (folderId === 'unsorted') return f === null;
@@ -199,8 +246,8 @@
   }
 
   function getFolderInventory(folderId) {
-    if (!hoardData) return [];
-    return hoardData.inventoryData.filter(inv => {
+    const invList = getCurrentInventory();
+    return invList.filter(inv => {
       const f = getItemFolder(inv);
       if (folderId === 'all') return true;
       if (folderId === 'unsorted') return f === null;
@@ -264,6 +311,31 @@
       }
     });
 
+    // Listen for hashchange (for file: offline testing between #hoard and #buried)
+    window.addEventListener('hashchange', () => {
+      selectedItems.clear();
+      currentPage = 1;
+      renderOrganizer();
+    });
+
+    // Intercept native sub_menu links in file: preview mode
+    if (window.location.protocol === 'file:') {
+      document.querySelectorAll('.sub_menu a').forEach(a => {
+        const href = a.getAttribute('href') || '';
+        if (href.includes('page=buried')) {
+          a.addEventListener('click', (e) => {
+            e.preventDefault();
+            window.location.hash = '#buried';
+          });
+        } else if (href === '/hoard.php' || href.endsWith('/hoard.php')) {
+          a.addEventListener('click', (e) => {
+            e.preventDefault();
+            window.location.hash = '#hoard';
+          });
+        }
+      });
+    }
+
     // Render full organizer
     renderOrganizer();
 
@@ -301,17 +373,36 @@
     const root = document.getElementById('lioden-hoard-organizer');
     if (!root || !hoardData) return;
 
-    const totalCount = hoardData.inventoryData.length;
+    const isBuried = checkIsBuriedPage();
+    const currentInv = getCurrentInventory();
+    const totalCount = currentInv.length;
     const unsortedCount = countFolderItems('unsorted');
+
+    const buriedUrl = window.location.protocol === 'file:' ? '#buried' : '/hoard.php?page=buried';
+    const hoardUrl = window.location.protocol === 'file:' ? '#hoard' : '/hoard.php';
+
+    const digInputInfo = getNativeInputInfo('dig');
+    const digAllInputInfo = getNativeInputInfo('dig-all');
+    const buryInputInfo = getNativeInputInfo('bury');
 
     root.innerHTML = `
       <!-- Header -->
       <div class="lho-header">
         <div class="lho-title-area">
-          <span class="lho-title">🦁 Hoard Organizer</span>
+          <span class="lho-title">${isBuried ? '⛏️ Buried Items Organizer' : '🦁 Hoard Organizer'}</span>
           <span class="lho-stats-pill">${totalCount} Items • ${userFolders.length} Folders</span>
+          ${isBuried ? '<span class="lho-stats-pill" style="background:#4A5568;color:#fff;">🪦 Buried Vault</span>' : ''}
         </div>
         <div class="lho-header-actions">
+          ${isBuried ? `
+            <a href="${hoardUrl}" class="lho-btn lho-btn-primary" id="lho-btn-nav-hoard" title="Return to active hoard">
+              📦 Back to Hoard
+            </a>
+          ` : `
+            <a href="${buriedUrl}" class="lho-btn lho-btn-secondary" id="lho-btn-nav-buried" title="View and dig up your buried items">
+              🪦 Buried Items ↗
+            </a>
+          `}
           <button type="button" class="lho-btn lho-btn-primary" id="lho-btn-add-folder">
             + New Folder
           </button>
@@ -323,6 +414,20 @@
           </button>
         </div>
       </div>
+
+      <!-- Buried Mode Notice Banner -->
+      ${isBuried ? `
+        <div class="lho-buried-banner">
+          <div class="lho-buried-banner-text">
+            <span class="lho-buried-icon">⛏️</span>
+            <div>
+              <b>Buried Items Vault</b> — These items are safe from expiring and cannot be used while buried.
+              Select items and click <b>Dig Up Selected</b>, or use <b>⛏️ Dig Up All</b> to return them to your active hoard.
+            </div>
+          </div>
+          <a href="${hoardUrl}" class="lho-btn lho-btn-secondary lho-btn-sm">← Return to Active Hoard</a>
+        </div>
+      ` : ''}
 
       <!-- Folder Navigation Tabs -->
       <div class="lho-tabs-wrapper">
@@ -439,11 +544,16 @@
 
           <span style="color: var(--lho-border-dark);">|</span>
 
-          <!-- Native Bury Action Integration -->
-          <input type="submit" name="buryall" value="Bury Selected" class="lho-btn lho-btn-danger lho-btn-sm" onclick="return confirm('Are you sure you want to bury these selected items?');">
-
-          <!-- Branch Action -->
-          <button type="button" class="lho-btn lho-btn-outline lho-btn-sm" id="lho-btn-bulk-branch" title="Put selected items on your branch">🌿 Branch Selected</button>
+          ${isBuried ? `
+            <!-- Native Dig Up Action Integration -->
+            <input type="submit" name="${digInputInfo.name}" value="${digInputInfo.value}" class="lho-btn lho-btn-primary lho-btn-sm" id="lho-btn-bulk-dig" onclick="return confirm('Are you sure you want to dig up these selected items?');">
+            <input type="submit" name="${digAllInputInfo.name}" value="${digAllInputInfo.value}" class="lho-btn lho-btn-outline lho-btn-sm" id="lho-btn-bulk-dig-all" onclick="return confirm('Are you sure you want to dig up everything in your buried hoard?');">
+          ` : `
+            <!-- Native Bury Action Integration -->
+            <input type="submit" name="${buryInputInfo.name}" value="${buryInputInfo.value}" class="lho-btn lho-btn-danger lho-btn-sm" id="lho-btn-bulk-bury" onclick="return confirm('Are you sure you want to bury these selected items?');">
+            <!-- Branch Action -->
+            <button type="button" class="lho-btn lho-btn-outline lho-btn-sm" id="lho-btn-bulk-branch" title="Put selected items on your branch">🌿 Branch Selected</button>
+          `}
         </div>
       </div>
 
@@ -471,6 +581,7 @@
     if (!folder) return '';
 
     const count = countFolderItems(folder.id);
+    const isBuried = checkIsBuriedPage();
 
     return `
       <div class="lho-folder-banner">
@@ -483,12 +594,18 @@
           <button type="button" class="lho-btn lho-btn-outline lho-btn-sm" id="lho-btn-edit-folder" data-id="${folder.id}">
             ✏️ Edit
           </button>
-          <button type="button" class="lho-btn lho-btn-outline lho-btn-sm" id="lho-btn-bury-folder" data-id="${folder.id}" title="Bury all items in this folder">
-            🪦 Bury All
-          </button>
-          <button type="button" class="lho-btn lho-btn-outline lho-btn-sm" id="lho-btn-branch-folder" data-id="${folder.id}" title="Put all items in this folder on your branch">
-            🌿 Put on Branch
-          </button>
+          ${isBuried ? `
+            <button type="button" class="lho-btn lho-btn-primary lho-btn-sm" id="lho-btn-dig-folder" data-id="${folder.id}" title="Dig up all items in this folder">
+              ⛏️ Dig Up All
+            </button>
+          ` : `
+            <button type="button" class="lho-btn lho-btn-outline lho-btn-sm" id="lho-btn-bury-folder" data-id="${folder.id}" title="Bury all items in this folder">
+              🪦 Bury All
+            </button>
+            <button type="button" class="lho-btn lho-btn-outline lho-btn-sm" id="lho-btn-branch-folder" data-id="${folder.id}" title="Put all items in this folder on your branch">
+              🌿 Put on Branch
+            </button>
+          `}
           <button type="button" class="lho-btn lho-btn-danger lho-btn-sm" id="lho-btn-delete-folder" data-id="${folder.id}">
             🗑️ Delete
           </button>
@@ -502,9 +619,10 @@
   // =========================================================================
 
   function getFilteredItems() {
-    if (!hoardData) return [];
+    const invList = getCurrentInventory();
+    if (!invList || invList.length === 0) return [];
 
-    let items = hoardData.inventoryData.filter(inv => {
+    let items = invList.filter(inv => {
       const folder = getItemFolder(inv);
 
       // Folder Filter
@@ -567,6 +685,7 @@
     const paginationBar = document.getElementById('lho-pagination-bar');
     if (!grid) return;
 
+    const isBuried = checkIsBuriedPage();
     const filtered = getFilteredItems();
 
     // Pagination calculations
@@ -581,14 +700,18 @@
     if (visibleItems.length === 0) {
       grid.innerHTML = `
         <div class="lho-empty-state" style="grid-column: 1 / -1;">
-          <div class="lho-empty-icon">📦</div>
-          <div class="lho-empty-title">No items found</div>
+          <div class="lho-empty-icon">${isBuried ? '⛏️' : '📦'}</div>
+          <div class="lho-empty-title">${isBuried ? 'No buried items found' : 'No items found'}</div>
           <div class="lho-empty-desc">
             ${searchQuery || categoryFilter !== 'all' 
               ? 'No items match your current search or category filter.' 
-              : activeFolderId === 'unsorted'
-                ? 'All items in your hoard have been organized into folders!'
-                : 'This folder is empty. Drag and drop items here, or use the folder menu (📁▾) on any item card.'}
+              : isBuried
+                ? (activeFolderId === 'unsorted' && countFolderItems('all') > 0
+                    ? 'All buried items have been organized into folders!'
+                    : 'You currently have no buried items. You can bury items from your main hoard to keep them safe.')
+                : activeFolderId === 'unsorted'
+                  ? 'All items in your hoard have been organized into folders!'
+                  : 'This folder is empty. Drag and drop items here, or use the folder menu (📁▾) on any item card.'}
           </div>
         </div>
       `;
@@ -875,7 +998,7 @@
 
             if (dragData.checkValue && selectedItems.has(dragData.checkValue) && selectedItems.size > 1) {
               let movedCount = 0;
-              hoardData.inventoryData.forEach(inv => {
+              getCurrentInventory().forEach(inv => {
                 const val = String(inv.amount > 1 ? inv.item : inv.id);
                 if (selectedItems.has(val)) {
                   assignItemToFolder(inv.item, inv.id, targetFolderId);
@@ -1010,7 +1133,7 @@
         const count = selectedItems.size;
         if (count === 0) return;
 
-        hoardData.inventoryData.forEach(inv => {
+        getCurrentInventory().forEach(inv => {
           const val = String(inv.amount > 1 ? inv.item : inv.id);
           if (selectedItems.has(val)) {
             assignItemToFolder(inv.item, inv.id, targetFolder === 'unsorted' ? null : targetFolder);
@@ -1029,7 +1152,7 @@
       btnBulkBranch.addEventListener('click', () => {
         if (selectedItems.size === 0) return;
         const itemsToBranch = [];
-        hoardData.inventoryData.forEach(inv => {
+        getCurrentInventory().forEach(inv => {
           const val = String(inv.amount > 1 ? inv.item : inv.id);
           if (selectedItems.has(val)) {
             itemsToBranch.push(inv);
@@ -1049,15 +1172,66 @@
       });
     }
 
-    // Folder Banner Actions (Edit / Delete)
+    // Bulk Dig / Bury Handlers for simulated file: protocol
+    const btnBulkDig = root.querySelector('#lho-btn-bulk-dig');
+    const btnBulkDigAll = root.querySelector('#lho-btn-bulk-dig-all');
+    const btnBulkBury = root.querySelector('#lho-btn-bulk-bury');
+
+    if (window.location.protocol === 'file:') {
+      if (btnBulkDig) {
+        btnBulkDig.addEventListener('click', (e) => {
+          e.preventDefault();
+          const itemsToDig = getCurrentInventory().filter(inv => {
+            const val = String(inv.amount > 1 ? inv.item : inv.id);
+            return selectedItems.has(val);
+          });
+          digItems(itemsToDig, 'Selected Items');
+        });
+      }
+      if (btnBulkDigAll) {
+        btnBulkDigAll.addEventListener('click', (e) => {
+          e.preventDefault();
+          digAllItems();
+        });
+      }
+      if (btnBulkBury) {
+        btnBulkBury.addEventListener('click', (e) => {
+          e.preventDefault();
+          const itemsToBury = getCurrentInventory().filter(inv => {
+            const val = String(inv.amount > 1 ? inv.item : inv.id);
+            return selectedItems.has(val);
+          });
+          buryItems(itemsToBury, 'Selected Items');
+        });
+      }
+    }
+
+    // Native Form submit sync for multi-page selections
+    const fraHoard = document.getElementById('fraHoardList');
+    const hoardForm = fraHoard ? fraHoard.closest('form') : document.querySelector('form[method="post"]');
+    if (hoardForm && !hoardForm.__lho_sync_attached__) {
+      hoardForm.__lho_sync_attached__ = true;
+      hoardForm.addEventListener('submit', () => {
+        syncSelectedItemsToForm(hoardForm);
+      });
+    }
+
+    // Folder Banner Actions (Edit / Dig / Bury / Branch / Delete)
     const btnEditFolder = root.querySelector('#lho-btn-edit-folder');
+    const btnDigFolder = root.querySelector('#lho-btn-dig-folder');
     const btnBuryFolder = root.querySelector('#lho-btn-bury-folder');
     const btnBranchFolder = root.querySelector('#lho-btn-branch-folder');
     const btnDeleteFolder = root.querySelector('#lho-btn-delete-folder');
+
     if (btnEditFolder) {
       btnEditFolder.addEventListener('click', () => {
         const folder = userFolders.find(f => f.id === btnEditFolder.dataset.id);
         if (folder) showFolderModal(folder);
+      });
+    }
+    if (btnDigFolder) {
+      btnDigFolder.addEventListener('click', () => {
+        digFolderItems(btnDigFolder.dataset.id);
       });
     }
     if (btnBuryFolder) {
@@ -1198,6 +1372,9 @@
   function showQuickMovePopover(itemId, instanceId, itemName, checkVal, anchorEl) {
     closeAllPopovers();
 
+    const isBuried = checkIsBuriedPage();
+    const inv = getCurrentInventory().find(i => String(i.amount > 1 ? i.item : i.id) === String(checkVal));
+
     // If multiple items are selected, include the clicked item as well
     const isMulti = selectedItems.size > 0;
     if (isMulti && checkVal) {
@@ -1227,6 +1404,16 @@
       <div class="lho-popover-item" data-action="new-folder">
         <span>➕</span> <b>New Folder...</b>
       </div>
+      <div class="lho-popover-divider"></div>
+      ${isBuried ? `
+        <div class="lho-popover-item" data-action="dig-item">
+          <span>⛏️</span> <span>Dig Up ${isMulti ? `${totalCount} Items` : 'Item'}</span>
+        </div>
+      ` : `
+        <div class="lho-popover-item" data-action="bury-item">
+          <span>🪦</span> <span>Bury ${isMulti ? `${totalCount} Items` : 'Item'}</span>
+        </div>
+      `}
     `;
 
     positionPopover(popover, anchorEl, -80);
@@ -1238,7 +1425,7 @@
 
       if (isMulti) {
         let movedCount = 0;
-        hoardData.inventoryData.forEach(inv => {
+        getCurrentInventory().forEach(inv => {
           const val = String(inv.amount > 1 ? inv.item : inv.id);
           if (selectedItems.has(val)) {
             assignItemToFolder(inv.item, inv.id, targetFolderId === 'unsorted' ? null : targetFolderId);
@@ -1269,6 +1456,38 @@
         }
       });
     });
+
+    const digItemBtn = popover.querySelector('[data-action="dig-item"]');
+    if (digItemBtn) {
+      digItemBtn.addEventListener('click', () => {
+        closeAllPopovers();
+        if (isMulti) {
+          const itemsToDig = getCurrentInventory().filter(i => {
+            const val = String(i.amount > 1 ? i.item : i.id);
+            return selectedItems.has(val);
+          });
+          digItems(itemsToDig, 'Selected Items');
+        } else if (inv) {
+          digItems([inv], inv.name || itemName);
+        }
+      });
+    }
+
+    const buryItemBtn = popover.querySelector('[data-action="bury-item"]');
+    if (buryItemBtn) {
+      buryItemBtn.addEventListener('click', () => {
+        closeAllPopovers();
+        if (isMulti) {
+          const itemsToBury = getCurrentInventory().filter(i => {
+            const val = String(i.amount > 1 ? i.item : i.id);
+            return selectedItems.has(val);
+          });
+          buryItems(itemsToBury, 'Selected Items');
+        } else if (inv) {
+          buryItems([inv], inv.name || itemName);
+        }
+      });
+    }
 
     const closeHandler = (e) => {
       if (!popover.contains(e.target) && e.target !== anchorEl) {
@@ -1344,6 +1563,7 @@
 
     const canMoveLeft = folderIdx > 0;
     const canMoveRight = folderIdx < userFolders.length - 1;
+    const isBuried = checkIsBuriedPage();
 
     const popover = document.createElement('div');
     popover.className = 'lho-popover';
@@ -1364,12 +1584,18 @@
         </div>
       ` : ''}
       <div class="lho-popover-divider"></div>
-      <div class="lho-popover-item" data-action="bury-folder">
-        <span>🪦</span> <span>Bury All Items</span>
-      </div>
-      <div class="lho-popover-item" data-action="branch-folder">
-        <span>🌿</span> <span>Put All on Branch</span>
-      </div>
+      ${isBuried ? `
+        <div class="lho-popover-item" data-action="dig-folder">
+          <span>⛏️</span> <span>Dig Up All Items</span>
+        </div>
+      ` : `
+        <div class="lho-popover-item" data-action="bury-folder">
+          <span>🪦</span> <span>Bury All Items</span>
+        </div>
+        <div class="lho-popover-item" data-action="branch-folder">
+          <span>🌿</span> <span>Put All on Branch</span>
+        </div>
+      `}
       <div class="lho-popover-divider"></div>
       <div class="lho-popover-item" data-action="delete" style="color: var(--lho-danger);">
         <span>🗑️</span> <span>Delete Folder</span>
@@ -1411,6 +1637,14 @@
       });
     }
 
+    const digBtn = popover.querySelector('[data-action="dig-folder"]');
+    if (digBtn) {
+      digBtn.addEventListener('click', () => {
+        closeAllPopovers();
+        digFolderItems(folder.id);
+      });
+    }
+
     const buryBtn = popover.querySelector('[data-action="bury-folder"]');
     if (buryBtn) {
       buryBtn.addEventListener('click', () => {
@@ -1447,36 +1681,67 @@
     document.querySelectorAll('.lho-popover').forEach(el => el.remove());
   }
 
-  function buryFolderItems(folderId) {
-    const folder = userFolders.find(f => f.id === folderId);
-    if (!folder || !hoardData) return;
+  function syncSelectedItemsToForm(form) {
+    form.querySelectorAll('.lho-temp-form-input').forEach(el => el.remove());
 
-    const folderItems = getFolderInventory(folderId);
-    if (folderItems.length === 0) {
-      showToast(`Folder "${folder.name}" is empty.`);
-      return;
-    }
+    const renderedValues = new Set();
+    form.querySelectorAll('input.lho-card-check:checked').forEach(cb => {
+      renderedValues.add(cb.value);
+    });
 
-    const count = folderItems.length;
+    const invList = getCurrentInventory();
+    invList.forEach(inv => {
+      const val = String(inv.amount > 1 ? inv.item : inv.id);
+      if (selectedItems.has(val) && !renderedValues.has(val)) {
+        const hidden = document.createElement('input');
+        hidden.type = 'hidden';
+        hidden.className = 'lho-temp-form-input';
+        if (inv.amount > 1) {
+          hidden.name = 'stack[]';
+          hidden.value = inv.item;
+        } else {
+          hidden.name = 'item[]';
+          hidden.value = inv.id;
+        }
+        form.appendChild(hidden);
+      }
+    });
+  }
+
+  function digItems(itemsToDig, label = '') {
+    if (!itemsToDig || itemsToDig.length === 0) return;
+    const count = itemsToDig.length;
     const countText = `${count} item${count === 1 ? '' : 's'}`;
-    if (!confirm(`Are you sure you want to bury all ${countText} in folder "${folder.name}"?`)) {
-      return;
-    }
+    const confirmMsg = label 
+      ? `Are you sure you want to dig up ${countText} (${label})?` 
+      : `Are you sure you want to dig up ${countText}?`;
+    if (!confirm(confirmMsg)) return;
 
     if (window.location.protocol === 'file:') {
-      showToast(`[Preview] Buried all ${countText} from "${folder.name}"!`);
-      const itemSet = new Set(folderItems.map(inv => inv.id || inv.item));
-      hoardData.inventoryData = hoardData.inventoryData.filter(inv => !itemSet.has(inv.id || inv.item));
+      showToast(`[Preview] Dug up ${countText}!`);
+      const itemSet = new Set(itemsToDig.map(inv => String(inv.amount > 1 ? inv.item : inv.id)));
+      const moved = [];
+      simulatedBuriedInventory = (simulatedBuriedInventory || []).filter(inv => {
+        const val = String(inv.amount > 1 ? inv.item : inv.id);
+        if (itemSet.has(val)) {
+          moved.push(inv);
+          return false;
+        }
+        return true;
+      });
+      simulatedActiveInventory = simulatedActiveInventory || [];
+      moved.forEach(inv => simulatedActiveInventory.push(inv));
+      selectedItems.clear();
       renderOrganizer();
       return;
     }
 
-    // Submit via native hoard form POST to hoard.php
+    // Submit native form to hoard.php?page=buried
     const form = document.createElement('form');
     form.method = 'POST';
-    form.action = window.location.pathname || 'hoard.php';
+    form.action = window.location.pathname + (window.location.search || '');
 
-    folderItems.forEach(inv => {
+    itemsToDig.forEach(inv => {
       const input = document.createElement('input');
       input.type = 'hidden';
       if (inv.amount > 1) {
@@ -1489,19 +1754,132 @@
       form.appendChild(input);
     });
 
+    const digInfo = getNativeInputInfo('dig');
     const submitInput = document.createElement('input');
     submitInput.type = 'hidden';
-    submitInput.name = 'buryall';
-    submitInput.value = 'Bury Checked';
+    submitInput.name = digInfo.name;
+    submitInput.value = digInfo.value;
     form.appendChild(submitInput);
 
     document.body.appendChild(form);
     form.submit();
   }
 
+  function digAllItems() {
+    if (!confirm('Are you sure you want to dig up everything in your buried hoard?')) return;
+
+    if (window.location.protocol === 'file:') {
+      const count = (simulatedBuriedInventory || []).length;
+      showToast(`[Preview] Dug up all ${count} buried items!`);
+      simulatedActiveInventory = simulatedActiveInventory || [];
+      (simulatedBuriedInventory || []).forEach(inv => simulatedActiveInventory.push(inv));
+      simulatedBuriedInventory = [];
+      selectedItems.clear();
+      renderOrganizer();
+      return;
+    }
+
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = window.location.pathname + (window.location.search || '');
+
+    const digAllInfo = getNativeInputInfo('dig-all');
+    const submitInput = document.createElement('input');
+    submitInput.type = 'hidden';
+    submitInput.name = digAllInfo.name;
+    submitInput.value = digAllInfo.value;
+    form.appendChild(submitInput);
+
+    document.body.appendChild(form);
+    form.submit();
+  }
+
+  function buryItems(itemsToBury, label = '') {
+    if (!itemsToBury || itemsToBury.length === 0) return;
+    const count = itemsToBury.length;
+    const countText = `${count} item${count === 1 ? '' : 's'}`;
+    const confirmMsg = label 
+      ? `Are you sure you want to bury ${countText} (${label})?` 
+      : `Are you sure you want to bury ${countText}?`;
+    if (!confirm(confirmMsg)) return;
+
+    if (window.location.protocol === 'file:') {
+      showToast(`[Preview] Buried ${countText}!`);
+      const itemSet = new Set(itemsToBury.map(inv => String(inv.amount > 1 ? inv.item : inv.id)));
+      const moved = [];
+      simulatedActiveInventory = (simulatedActiveInventory || []).filter(inv => {
+        const val = String(inv.amount > 1 ? inv.item : inv.id);
+        if (itemSet.has(val)) {
+          moved.push(inv);
+          return false;
+        }
+        return true;
+      });
+      simulatedBuriedInventory = simulatedBuriedInventory || [];
+      moved.forEach(inv => simulatedBuriedInventory.push(inv));
+      selectedItems.clear();
+      renderOrganizer();
+      return;
+    }
+
+    // Submit native form to hoard.php
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = window.location.pathname + (window.location.search || '');
+
+    itemsToBury.forEach(inv => {
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      if (inv.amount > 1) {
+        input.name = 'stack[]';
+        input.value = inv.item;
+      } else {
+        input.name = 'item[]';
+        input.value = inv.id;
+      }
+      form.appendChild(input);
+    });
+
+    const buryInfo = getNativeInputInfo('bury');
+    const submitInput = document.createElement('input');
+    submitInput.type = 'hidden';
+    submitInput.name = buryInfo.name;
+    submitInput.value = buryInfo.value;
+    form.appendChild(submitInput);
+
+    document.body.appendChild(form);
+    form.submit();
+  }
+
+  function buryFolderItems(folderId) {
+    const folder = userFolders.find(f => f.id === folderId);
+    if (!folder) return;
+
+    const folderItems = getFolderInventory(folderId);
+    if (folderItems.length === 0) {
+      showToast(`Folder "${folder.name}" is empty.`);
+      return;
+    }
+
+    buryItems(folderItems, `folder "${folder.name}"`);
+  }
+
+  function digFolderItems(folderId) {
+    const folder = userFolders.find(f => f.id === folderId);
+    if (!folder) return;
+
+    const folderItems = getFolderInventory(folderId);
+    if (folderItems.length === 0) {
+      showToast(`Folder "${folder.name}" is empty.`);
+      return;
+    }
+
+    digItems(folderItems, `folder "${folder.name}"`);
+  }
+
   async function putFolderOnBranch(folderId) {
     const folder = userFolders.find(f => f.id === folderId);
-    if (!folder || !hoardData) return;
+    if (!folder) return;
 
     const folderItems = getFolderInventory(folderId);
     if (folderItems.length === 0) {
@@ -1518,7 +1896,12 @@
     if (window.location.protocol === 'file:') {
       showToast(`[Preview] Put all ${countText} from "${folder.name}" on Branch!`);
       const itemSet = new Set(folderItems.map(inv => inv.id || inv.item));
-      hoardData.inventoryData = hoardData.inventoryData.filter(inv => !itemSet.has(inv.id || inv.item));
+      const isBuried = checkIsBuriedPage();
+      if (isBuried) {
+        simulatedBuriedInventory = (simulatedBuriedInventory || []).filter(inv => !itemSet.has(inv.id || inv.item));
+      } else {
+        simulatedActiveInventory = (simulatedActiveInventory || []).filter(inv => !itemSet.has(inv.id || inv.item));
+      }
       renderOrganizer();
       return;
     }
@@ -1542,8 +1925,9 @@
       }
     });
 
+    const isBuried = checkIsBuriedPage();
     const formData = new FormData();
-    formData.append('source', 'hoard');
+    formData.append('source', isBuried ? 'buried' : 'hoard');
     formData.append('itemsStacked', stackedList.join(','));
     formData.append('itemsUnstacked', unstackedList.join(','));
     formData.append('run', 'branch');
