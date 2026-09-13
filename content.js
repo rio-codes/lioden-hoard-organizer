@@ -31,7 +31,7 @@
   let searchQuery = '';
   let categoryFilter = 'all';
   let sortBy = 'name_asc';
-  let pageSize = 'all'; // 'all', 50, 100, 200
+  let pageSize = 'all'; // 'all', 60, 120, 240
   let currentPage = 1;
   let isFolderViewEnabled = true;
   let isFoldersCollapsed = false;
@@ -178,7 +178,13 @@
           if (typeof settings.enabled === 'boolean') isFolderViewEnabled = settings.enabled;
           if (settings.activeFolderId) activeFolderId = settings.activeFolderId || 'unsorted';
           if (settings.sortBy) sortBy = settings.sortBy;
-          if (settings.pageSize) pageSize = settings.pageSize;
+          if (settings.pageSize) {
+            let ps = settings.pageSize;
+            if (ps === '50') ps = '60';
+            else if (ps === '100') ps = '120';
+            else if (ps === '200') ps = '240';
+            pageSize = ps;
+          }
           if (typeof settings.foldersCollapsed === 'boolean') isFoldersCollapsed = settings.foldersCollapsed;
 
           resolve();
@@ -196,7 +202,13 @@
         if (typeof settings.enabled === 'boolean') isFolderViewEnabled = settings.enabled;
         if (settings.activeFolderId) activeFolderId = settings.activeFolderId || 'unsorted';
         if (settings.sortBy) sortBy = settings.sortBy;
-        if (settings.pageSize) pageSize = settings.pageSize;
+        if (settings.pageSize) {
+          let ps = settings.pageSize;
+          if (ps === '50') ps = '60';
+          else if (ps === '100') ps = '120';
+          else if (ps === '200') ps = '240';
+          pageSize = ps;
+        }
         if (typeof settings.foldersCollapsed === 'boolean') isFoldersCollapsed = settings.foldersCollapsed;
 
         resolve();
@@ -412,6 +424,18 @@
       });
     }
 
+    // Re-render when window is resized across responsive grid breakpoints to ensure full rows
+    let lastColCount = getGridColumnCount();
+    window.addEventListener('resize', () => {
+      const newCols = getGridColumnCount();
+      if (newCols !== lastColCount) {
+        lastColCount = newCols;
+        if (pageSize !== 'all') {
+          renderOrganizer();
+        }
+      }
+    });
+
     // Render full organizer
     renderOrganizer();
 
@@ -599,11 +623,11 @@
         <div class="lho-filter-group">
           <!-- Page Limit -->
           <span style="font-size: 11px; color: var(--lho-text-muted);">Display:</span>
-          <select class="lho-select" id="lho-pagesize-select">
+          <select class="lho-select" id="lho-pagesize-select" title="Items per page (evenly fills grid rows)">
             <option value="all" ${pageSize === 'all' ? 'selected' : ''}>All (Aggregated)</option>
-            <option value="50" ${pageSize === '50' ? 'selected' : ''}>50 per page</option>
-            <option value="100" ${pageSize === '100' ? 'selected' : ''}>100 per page</option>
-            <option value="200" ${pageSize === '200' ? 'selected' : ''}>200 per page</option>
+            <option value="60" ${pageSize === '60' ? 'selected' : ''}>60 per page</option>
+            <option value="120" ${pageSize === '120' ? 'selected' : ''}>120 per page</option>
+            <option value="240" ${pageSize === '240' ? 'selected' : ''}>240 per page</option>
           </select>
         </div>
       </div>
@@ -766,6 +790,31 @@
     return items;
   }
 
+  function getGridColumnCount() {
+    const grid = document.getElementById('lho-items-grid');
+    if (!grid) return 6;
+    const gridStyle = window.getComputedStyle(grid);
+    const templateColumns = gridStyle.getPropertyValue('grid-template-columns');
+    if (templateColumns) {
+      const cols = templateColumns.split(' ').filter(Boolean).length;
+      if (cols > 0) return cols;
+    }
+    return 6;
+  }
+
+  function getEffectivePageLimit() {
+    if (pageSize === 'all') return 'all';
+    let base = parseInt(pageSize, 10);
+    if (isNaN(base) || base <= 0) base = 60;
+    if (base === 50) base = 60;
+    if (base === 100) base = 120;
+    if (base === 200) base = 240;
+
+    const cols = getGridColumnCount();
+    const rows = Math.max(1, Math.round(base / cols));
+    return rows * cols;
+  }
+
   function renderItemsGrid() {
     const grid = document.getElementById('lho-items-grid');
     const paginationBar = document.getElementById('lho-pagination-bar');
@@ -774,8 +823,9 @@
     const isBuried = checkIsBuriedPage();
     const filtered = getFilteredItems();
 
-    // Pagination calculations
-    const limit = pageSize === 'all' ? filtered.length : parseInt(pageSize, 10);
+    // Pagination calculations (ensuring full rows with no trailing gaps)
+    const effectiveLimit = getEffectivePageLimit();
+    const limit = effectiveLimit === 'all' ? filtered.length : effectiveLimit;
     const totalPages = Math.max(1, Math.ceil(filtered.length / limit));
     if (currentPage > totalPages) currentPage = totalPages;
     if (currentPage < 1) currentPage = 1;

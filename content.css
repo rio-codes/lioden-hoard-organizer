@@ -488,8 +488,22 @@
 
 .lho-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(116px, 1fr));
+  grid-template-columns: repeat(6, 1fr);
   gap: 12px;
+}
+
+@media (max-width: 1199px) {
+  .lho-grid {
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+  }
+}
+
+@media (max-width: 991px) {
+  .lho-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
 }
 
 .lho-card {
@@ -1264,8 +1278,8 @@
     padding: 10px;
   }
   .lho-grid {
-    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-    gap: 10px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
   }
 
   /* Touch Targets on Cards */
