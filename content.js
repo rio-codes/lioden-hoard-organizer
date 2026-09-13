@@ -54,6 +54,13 @@
     return new URLSearchParams(window.location.search).get('page') === 'buried';
   }
 
+  function checkIsStackPage() {
+    if (window.location.protocol === 'file:') {
+      return window.location.hash.startsWith('#stack') || new URLSearchParams(window.location.search).has('stack');
+    }
+    return new URLSearchParams(window.location.search).has('stack');
+  }
+
   function initSimulatedInventories() {
     if (window.location.protocol === 'file:' && !simulatedActiveInventory && hoardData) {
       simulatedActiveInventory = [...hoardData.inventoryData];
@@ -298,10 +305,17 @@
   // =========================================================================
 
   function initOrganizerUI() {
-    // Look for form that contains fraHoardList, or general form
-    const fraHoard = document.getElementById('fraHoardList');
-    const hoardForm = fraHoard ? fraHoard.closest('form') : document.querySelector('form[method="post"]');
+    // If viewing a stacked item page, do not initialize - show default Lioden stack page
+    if (checkIsStackPage()) return;
 
+    // Look for form that contains fraHoardList (must be present on hoard grid page)
+    const fraHoard = document.getElementById('fraHoardList');
+    if (!fraHoard) {
+      console.warn('[LHO] Native hoard container #fraHoardList not found. Skipping organizer initialization.');
+      return;
+    }
+
+    const hoardForm = fraHoard.closest('form');
     if (!hoardForm) {
       console.warn('[LHO] Native hoard form not found.');
       return;
@@ -349,8 +363,24 @@
       }
     });
 
-    // Listen for hashchange (for file: offline testing between #hoard and #buried)
+    // Listen for hashchange (for file: offline testing between #hoard and #buried and #stack)
     window.addEventListener('hashchange', () => {
+      const curRoot = document.getElementById('lioden-hoard-organizer');
+      const curBanner = document.getElementById('lho-classic-banner');
+      const curFraHoard = document.getElementById('fraHoardList');
+
+      if (checkIsStackPage()) {
+        if (curRoot) curRoot.classList.add('lho-hidden');
+        if (curBanner) curBanner.classList.add('lho-hidden');
+        if (curFraHoard) curFraHoard.classList.remove('lho-hidden');
+        return;
+      }
+
+      if (isFolderViewEnabled) {
+        if (curRoot) curRoot.classList.remove('lho-hidden');
+        if (curFraHoard) curFraHoard.classList.add('lho-hidden');
+      }
+
       selectedItems.clear();
       currentPage = 1;
       renderOrganizer();
@@ -795,8 +825,12 @@
     }
 
     // Action link & text
-    const useUrl = isStacked ? `/hoard.php?stack=${inv.item}` : `/use.php?id=${inv.id}`;
+    const isFileProto = window.location.protocol === 'file:';
+    const useUrl = isStacked 
+      ? (isFileProto ? `https://www.lioden.com/hoard.php?stack=${inv.item}` : `/hoard.php?stack=${inv.item}`) 
+      : (isFileProto ? `https://www.lioden.com/use.php?id=${inv.id}` : `/use.php?id=${inv.id}`);
     const useText = isStacked ? `${inv.amount} Stacked` : `${inv.totaluses} ${inv.totaluses === 1 ? 'use' : 'uses'}`;
+    const linkTarget = isFileProto ? ' target="_blank" rel="noopener noreferrer"' : '';
 
     // Item image URL
     let imgUrl = inv.picture || '';
@@ -841,7 +875,7 @@
 
         <!-- Image & Tooltip trigger -->
         <div class="lho-card-img-wrap">
-          <a href="${useUrl}">
+          <a href="${useUrl}"${linkTarget}>
             <img src="${imgUrl}" alt="${escapeHtml(inv.name)}" class="lho-card-img" loading="lazy">
           </a>
         </div>
@@ -856,7 +890,7 @@
         <!-- Footer -->
         <div class="lho-card-footer">
           <input type="checkbox" name="${checkName}" value="${checkValue}" class="lho-card-check" ${isChecked ? 'checked' : ''}>
-          <a href="${useUrl}" class="lho-card-link">${useText}</a>
+          <a href="${useUrl}" class="lho-card-link"${linkTarget}>${useText}</a>
           <button type="button" class="lho-card-folder-btn" title="Move to folder" data-action="quick-folder">
             📁▾
           </button>
@@ -2513,9 +2547,22 @@
   // =========================================================================
 
   async function init() {
+    // 1. If viewing a stacked item page, do not initialize the organizer;
+    // allow the default Lioden stack page to display untouched.
+    if (checkIsStackPage()) {
+      return;
+    }
+
+    // 2. Must have native hoard container #fraHoardList
+    if (!document.getElementById('fraHoardList')) {
+      return;
+    }
+
     hoardData = extractHoardData();
     if (!hoardData) {
       setTimeout(() => {
+        if (checkIsStackPage()) return;
+        if (!document.getElementById('fraHoardList')) return;
         hoardData = extractHoardData();
         if (hoardData) {
           loadStorageData().then(initOrganizerUI);
