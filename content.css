@@ -144,6 +144,9 @@ body[data-lho-theme="desert"],
   color: var(--lho-text);
   overflow: visible;
   position: relative;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 /* Header */
@@ -597,24 +600,31 @@ body[data-lho-theme="desert"],
 .lho-items-section {
   padding: 16px;
   min-height: 250px;
+  box-sizing: border-box;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .lho-grid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 12px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 @media (max-width: 1199px) {
   .lho-grid {
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 10px;
   }
 }
 
 @media (max-width: 991px) {
   .lho-grid {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 10px;
   }
 }
@@ -631,6 +641,11 @@ body[data-lho-theme="desert"],
   transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
   position: relative;
   user-select: none;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .lho-card:hover {
@@ -662,6 +677,10 @@ body[data-lho-theme="desert"],
   margin-bottom: 4px;
   line-height: 1.2;
   height: 14px;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 /* Card Image Area */
@@ -672,11 +691,14 @@ body[data-lho-theme="desert"],
   position: relative;
   margin: 4px 0;
   cursor: pointer;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .lho-card-img {
   width: 90px;
   height: 90px;
+  max-width: 100%;
   object-fit: contain;
   border: 0;
   transition: transform 0.15s ease;
@@ -693,6 +715,10 @@ body[data-lho-theme="desert"],
   color: var(--lho-text-muted);
   line-height: 1.2;
   min-height: 24px;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .lho-meta-expire {
@@ -713,17 +739,28 @@ body[data-lho-theme="desert"],
   padding-top: 4px;
   margin-top: 4px;
   font-size: 10px;
+  min-width: 0;
+  max-width: 100%;
+  gap: 4px;
+  box-sizing: border-box;
 }
 
 .lho-card-check {
   cursor: pointer;
   margin: 0;
+  flex-shrink: 0;
 }
 
 .lho-card-link {
   font-weight: bold;
   color: var(--lho-primary) !important;
   text-decoration: none !important;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  text-align: center;
 }
 .lho-card-link:hover {
   color: var(--lho-accent) !important;
@@ -739,6 +776,7 @@ body[data-lho-theme="desert"],
   color: var(--lho-text-muted);
   border-radius: 3px;
   transition: all 0.15s ease;
+  flex-shrink: 0;
 }
 .lho-card-folder-btn:hover {
   background: var(--lho-bg-tabs);
@@ -751,12 +789,13 @@ body[data-lho-theme="desert"],
   padding: 1px 5px;
   border-radius: 8px;
   display: inline-block;
-  max-width: 90px;
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   margin-top: 2px;
   font-weight: 600;
+  box-sizing: border-box;
 }
 
 /* Empty State */
@@ -1395,8 +1434,12 @@ body[data-lho-theme="desert"],
     padding: 10px;
   }
   .lho-grid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
   }
 
   /* Touch Targets on Cards */
@@ -1444,8 +1487,12 @@ body[data-lho-theme="desert"],
 @media (max-width: 480px) {
   /* Extra compact for narrow phones */
   .lho-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
   }
   .lho-card {
     padding: 6px 5px;

@@ -432,14 +432,18 @@
 
     // Re-render when window is resized across responsive grid breakpoints to ensure full rows
     let lastColCount = getGridColumnCount();
+    let resizeTimer = null;
     window.addEventListener('resize', () => {
-      const newCols = getGridColumnCount();
-      if (newCols !== lastColCount) {
-        lastColCount = newCols;
-        if (pageSize !== 'all') {
-          renderOrganizer();
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        const newCols = getGridColumnCount();
+        if (newCols !== lastColCount) {
+          lastColCount = newCols;
+          if (pageSize !== 'all') {
+            renderOrganizer();
+          }
         }
-      }
+      }, 100);
     });
 
     // Apply theme (Day, Night, Desert, or Auto)
@@ -864,13 +868,19 @@
 
   function getGridColumnCount() {
     const grid = document.getElementById('lho-items-grid');
-    if (!grid) return 6;
-    const gridStyle = window.getComputedStyle(grid);
-    const templateColumns = gridStyle.getPropertyValue('grid-template-columns');
-    if (templateColumns) {
-      const cols = templateColumns.split(' ').filter(Boolean).length;
-      if (cols > 0) return cols;
+    if (grid) {
+      const gridStyle = window.getComputedStyle(grid);
+      const templateColumns = gridStyle.getPropertyValue('grid-template-columns');
+      if (templateColumns && templateColumns !== 'none') {
+        const cols = templateColumns.split(' ').filter(Boolean).length;
+        if (cols > 0) return cols;
+      }
     }
+    const width = window.innerWidth;
+    if (width <= 480) return 2;
+    if (width <= 768) return 3;
+    if (width <= 991) return 4;
+    if (width <= 1199) return 5;
     return 6;
   }
 
