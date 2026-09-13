@@ -39,18 +39,18 @@ A standalone browser extension (Manifest V3) for [Lioden](https://www.lioden.com
 
 ### Orion (iOS / iPadOS)
 
-1. Download the release `.zip` file (e.g., `lioden-hoard-organizer-v1.0.0.zip`) and save it to the **Files** app. *(Do not tap the file in Files to unzip it; Orion requires the `.zip` archive directly).*
+1. Download the release `.zip` file (e.g., `lioden-hoard-organizer-latest.zip` or `lioden-hoard-organizer-v1.0.2.zip`) and save it to the **Files** app. *(Do not tap the file in Files to unzip it; Orion requires the `.zip` archive directly).*
 2. Open **Orion**.
 3. Tap the **•••** menu in the bottom-right (or top-right on iPad) -> **Settings**.
 4. Scroll down to **Extensions** and ensure extension support is toggled **ON**.
 5. Tap **•••** -> **Extensions**.
 6. Tap the **+** button in the top-right corner.
-7. Select the `lioden-hoard-organizer-v1.0.0.zip` file from the Files picker.
+7. Select the `.zip` file from the Files picker.
 8. Navigate to [Lioden Hoard](https://www.lioden.com/hoard.php).
 
 ### Orion (macOS)
 
-1. Download and unzip `lioden-hoard-organizer-v1.0.0.zip`.
+1. Download and unzip `lioden-hoard-organizer-latest.zip`.
 2. Open Orion and click **Tools** -> **Extensions** -> **Add Extension** (or **Install from Disk...**).
 3. Select the unzipped folder containing `manifest.json`.
 4. Navigate to [Lioden Hoard](https://www.lioden.com/hoard.php).
@@ -60,8 +60,43 @@ A standalone browser extension (Manifest V3) for [Lioden](https://www.lioden.com
 1. Open Kiwi Browser or Lemur Browser.
 2. Tap the three dots **(⋮)** -> **Extensions**.
 3. Enable **Developer mode**.
-4. Tap **+(from .zip/.crx/.user.js)** and select `lioden-hoard-organizer-v1.0.0.zip`.
+4. Tap **+(from .zip/.crx/.user.js)** and select `lioden-hoard-organizer-latest.zip`.
 5. Navigate to [Lioden Hoard](https://www.lioden.com/hoard.php).
+
+---
+
+## Packaging & Versioning
+
+To package the extension into clean distribution `.zip` archives (`dist/lioden-hoard-organizer-v{version}.zip` and `dist/lioden-hoard-organizer-latest.zip`):
+
+```bash
+python3 package.py
+```
+
+### Version Bumping
+
+You can bump the version automatically:
+
+```bash
+python3 package.py --bump patch   # e.g., 1.0.2 -> 1.0.3
+python3 package.py --bump minor   # e.g., 1.0.2 -> 1.1.0
+python3 package.py --bump major   # e.g., 1.0.2 -> 2.0.0
+python3 package.py --set-version 1.2.0
+```
+
+### Automatic Git Pre-Commit Hook
+
+A Git pre-commit hook is provided in `.githooks/pre-commit` that automatically bumps the patch version and packages the zip upon every commit:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+To skip the bump for a specific commit:
+
+```bash
+NO_BUMP=1 git commit -m "commit message"
+```
 
 ---
 
@@ -77,5 +112,7 @@ A standalone test file [test_preview.html](file:///home/midbar/Projects/lioden-h
 - [`content.js`](file:///home/midbar/Projects/lioden-hoard-sorter/content.js) - Content script that parses hoard data and powers the organizer
 - [`content.css`](file:///home/midbar/Projects/lioden-hoard-sorter/content.css) - Lioden-matched styling, cards, tabs, and modals
 - [`popup.html`](file:///home/midbar/Projects/lioden-hoard-sorter/popup.html) / [`popup.js`](file:///home/midbar/Projects/lioden-hoard-sorter/popup.js) - Extension popup for stats and backup
+- [`package.py`](file:///home/midbar/Projects/lioden-hoard-sorter/package.py) - Extension packaging & version bumping script
+- [`.githooks/`](file:///home/midbar/Projects/lioden-hoard-sorter/.githooks) - Git hooks (automatic version bumper)
 - [`icons/`](file:///home/midbar/Projects/lioden-hoard-sorter/icons) - Extension icons (16px, 48px, 128px)
 - [`test_preview.html`](file:///home/midbar/Projects/lioden-hoard-sorter/test_preview.html) - Offline test preview of the hoard with organizer enabled

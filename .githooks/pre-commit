@@ -1,0 +1,27 @@
+#!/bin/bash
+# Pre-commit hook to automatically bump patch version in manifest.json and rebuild package
+set -e
+
+# Allow skipping bump if NO_BUMP environment variable is set
+if [ -n "$NO_BUMP" ]; then
+    exit 0
+fi
+
+# Get list of staged files
+staged_files=$(git diff --cached --name-only)
+if [ -z "$staged_files" ]; then
+    exit 0
+fi
+
+# If a version change in manifest.json is already staged (e.g. manual bump), package and proceed
+if git diff --cached manifest.json 2>/dev/null | grep -qE '^\+[ ]*"version"[ ]*:'; then
+    echo "[pre-commit] manifest.json version change already staged. Building package..."
+    python3 package.py
+    exit 0
+fi
+
+echo "[pre-commit] Staged changes detected. Auto-bumping patch version in manifest.json..."
+python3 package.py --bump patch
+git add manifest.json
+echo "[pre-commit] Staged updated manifest.json for commit."
+exit 0

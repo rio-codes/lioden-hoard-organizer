@@ -2355,8 +2355,11 @@
 
     // Export Handler
     backdrop.querySelector('#lho-btn-export-json').addEventListener('click', () => {
+      const extVersion = (typeof chrome !== 'undefined' && chrome.runtime?.getManifest)
+        ? (chrome.runtime.getManifest()?.version || '1.0.2')
+        : '1.0.2';
       const exportData = {
-        version: '1.0.0',
+        version: extVersion,
         exportedAt: new Date().toISOString(),
         folders: userFolders,
         itemMap: itemFolderMap,

@@ -60,8 +60,11 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnExport) {
     btnExport.addEventListener('click', () => {
       loadData((data) => {
+        const extVersion = (typeof chrome !== 'undefined' && chrome.runtime?.getManifest)
+          ? (chrome.runtime.getManifest()?.version || '1.0.2')
+          : '1.0.2';
         const exportData = {
-          version: '1.0.0',
+          version: extVersion,
           exportedAt: new Date().toISOString(),
           folders: data.folders || [],
           itemMap: data.itemMap || {},
