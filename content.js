@@ -34,6 +34,7 @@
   let pageSize = 'all'; // 'all', 50, 100, 200
   let currentPage = 1;
   let isFolderViewEnabled = true;
+  let isFoldersCollapsed = false;
   let draggingFolderId = null;
 
   // Selected checkbox values across current view
@@ -163,6 +164,7 @@
           if (settings.activeFolderId) activeFolderId = settings.activeFolderId || 'unsorted';
           if (settings.sortBy) sortBy = settings.sortBy;
           if (settings.pageSize) pageSize = settings.pageSize;
+          if (typeof settings.foldersCollapsed === 'boolean') isFoldersCollapsed = settings.foldersCollapsed;
 
           resolve();
         });
@@ -180,6 +182,7 @@
         if (settings.activeFolderId) activeFolderId = settings.activeFolderId || 'unsorted';
         if (settings.sortBy) sortBy = settings.sortBy;
         if (settings.pageSize) pageSize = settings.pageSize;
+        if (typeof settings.foldersCollapsed === 'boolean') isFoldersCollapsed = settings.foldersCollapsed;
 
         resolve();
       }
@@ -196,7 +199,8 @@
       enabled: isFolderViewEnabled,
       activeFolderId: activeFolderId,
       sortBy: sortBy,
-      pageSize: pageSize
+      pageSize: pageSize,
+      foldersCollapsed: isFoldersCollapsed
     };
 
     return new Promise((resolve) => {
@@ -253,6 +257,40 @@
       if (folderId === 'unsorted') return f === null;
       return f === folderId;
     });
+  }
+
+  function scrollActiveTabIntoView() {
+    if (!isFoldersCollapsed) return;
+    requestAnimationFrame(() => {
+      const container = document.getElementById('lho-folder-tabs');
+      const activeTab = container?.querySelector('.lho-tab.active');
+      if (container && activeTab) {
+        activeTab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+      }
+    });
+  }
+
+  function toggleFolderListCollapse() {
+    isFoldersCollapsed = !isFoldersCollapsed;
+    saveStorageData();
+
+    const wrapper = document.getElementById('lho-tabs-wrapper');
+    const container = document.getElementById('lho-folder-tabs');
+    const btn = document.getElementById('lho-btn-toggle-collapse');
+
+    if (wrapper) wrapper.classList.toggle('is-collapsed', isFoldersCollapsed);
+    if (container) container.classList.toggle('is-collapsed', isFoldersCollapsed);
+    if (btn) {
+      btn.title = isFoldersCollapsed ? 'Expand folder list (show all rows)' : 'Collapse folder list to 1 row';
+      btn.innerHTML = `
+        <span class="lho-toggle-icon">${isFoldersCollapsed ? '▼' : '▲'}</span>
+        <span class="lho-toggle-label">${isFoldersCollapsed ? 'Expand' : 'Collapse'}</span>
+      `;
+    }
+
+    if (isFoldersCollapsed) {
+      scrollActiveTabIntoView();
+    }
   }
 
   // =========================================================================
@@ -430,8 +468,8 @@
       ` : ''}
 
       <!-- Folder Navigation Tabs -->
-      <div class="lho-tabs-wrapper">
-        <div class="lho-tabs-container" id="lho-folder-tabs">
+      <div class="lho-tabs-wrapper ${isFoldersCollapsed ? 'is-collapsed' : ''}" id="lho-tabs-wrapper">
+        <div class="lho-tabs-container ${isFoldersCollapsed ? 'is-collapsed' : ''}" id="lho-folder-tabs">
           <!-- Unsorted Tab (Default View) -->
           <div class="lho-tab ${activeFolderId === 'unsorted' ? 'active' : ''}" data-folder-id="unsorted" title="Default View: Unsorted items only">
             <span class="lho-tab-icon">📥</span>
@@ -470,6 +508,15 @@
             </div>
           ` : ''}
         </div>
+
+        ${userFolders.length > 0 ? `
+          <div class="lho-tabs-toggle-wrap">
+            <button type="button" class="lho-tabs-toggle-btn" id="lho-btn-toggle-collapse" title="${isFoldersCollapsed ? 'Expand folder list (show all rows)' : 'Collapse folder list to 1 row'}">
+              <span class="lho-toggle-icon">${isFoldersCollapsed ? '▼' : '▲'}</span>
+              <span class="lho-toggle-label">${isFoldersCollapsed ? 'Expand' : 'Collapse'}</span>
+            </button>
+          </div>
+        ` : ''}
       </div>
 
       <!-- Active Folder Banner (if viewing custom folder) -->
@@ -572,6 +619,7 @@
 
     attachOrganizerEvents();
     renderItemsGrid();
+    scrollActiveTabIntoView();
   }
 
   function renderFolderBanner() {
@@ -1016,6 +1064,23 @@
             console.error('[LHO] Drop error:', err);
           }
         });
+      });
+
+      // Horizontal Mouse Wheel Scroll for Collapsed Tabs Row
+      tabsContainer.addEventListener('wheel', (e) => {
+        if (!isFoldersCollapsed) return;
+        if (e.deltaY !== 0 && e.deltaX === 0) {
+          e.preventDefault();
+          tabsContainer.scrollLeft += e.deltaY;
+        }
+      }, { passive: false });
+    }
+
+    // Folder List Collapse Toggle
+    const btnToggleCollapse = root.querySelector('#lho-btn-toggle-collapse');
+    if (btnToggleCollapse) {
+      btnToggleCollapse.addEventListener('click', () => {
+        toggleFolderListCollapse();
       });
     }
 

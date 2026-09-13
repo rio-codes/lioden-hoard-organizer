@@ -145,6 +145,15 @@
   background: #EFE7D8;
   border-bottom: 1px solid var(--lho-border);
   padding: 8px 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  position: relative;
+}
+
+.lho-tabs-wrapper.is-collapsed {
+  align-items: center;
+  padding: 6px 12px;
 }
 
 .lho-tabs-container {
@@ -152,6 +161,82 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 8px 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.lho-tabs-container.is-collapsed {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 2px 0 4px 0;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: #C4A882 transparent;
+}
+
+.lho-tabs-container.is-collapsed .lho-tab {
+  flex-shrink: 0;
+}
+
+.lho-tabs-container.is-collapsed::-webkit-scrollbar {
+  height: 4px;
+}
+
+.lho-tabs-container.is-collapsed::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+}
+
+.lho-tabs-container.is-collapsed::-webkit-scrollbar-thumb {
+  background: #C4A882;
+  border-radius: 4px;
+}
+
+.lho-tabs-container.is-collapsed::-webkit-scrollbar-thumb:hover {
+  background: #A6845B;
+}
+
+/* Tabs Collapse Toggle Button */
+.lho-tabs-toggle-wrap {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding-top: 3px;
+}
+
+.lho-tabs-wrapper.is-collapsed .lho-tabs-toggle-wrap {
+  padding-top: 0;
+}
+
+.lho-tabs-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #FFF;
+  border: 1px solid var(--lho-border-dark);
+  border-radius: 14px;
+  padding: 4px 9px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--lho-primary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  user-select: none;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.lho-tabs-toggle-btn:hover {
+  background: #FAF4E8;
+  border-color: var(--lho-accent);
+  color: var(--lho-accent);
+}
+
+.lho-tabs-toggle-btn .lho-toggle-icon {
+  font-size: 9px;
+  line-height: 1;
 }
 
 .lho-tab {
@@ -1077,10 +1162,18 @@
 
   /* Folder Tabs */
   .lho-tabs-wrapper {
-    padding: 8px 10px;
+    padding: 6px 10px;
+    gap: 6px;
+  }
+  .lho-tabs-wrapper.is-collapsed {
+    padding: 5px 8px;
   }
   .lho-tabs-container {
     gap: 6px 4px;
+  }
+  .lho-tabs-toggle-btn {
+    padding: 3px 7px;
+    font-size: 10.5px;
   }
   .lho-tab {
     padding: 7px 13px;
