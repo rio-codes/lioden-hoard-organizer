@@ -835,6 +835,14 @@ body[data-lho-theme="desert"],
   gap: 10px;
 }
 
+.lho-pagination-bar-top {
+  border-top: none;
+  border-bottom: 1px solid var(--lho-border);
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  padding: 8px 16px;
+}
+
 .lho-page-nav {
   display: flex;
   align-items: center;

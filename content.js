@@ -741,6 +741,11 @@
         </div>
       </div>
 
+      <!-- Top Pagination Bar -->
+      <div class="lho-pagination-bar lho-pagination-bar-top" id="lho-pagination-bar-top">
+        <!-- Pagination controls injected here -->
+      </div>
+
       <!-- Items Section -->
       <div class="lho-items-section">
         <div class="lho-grid" id="lho-items-grid">
@@ -897,7 +902,10 @@
 
   function renderItemsGrid() {
     const grid = document.getElementById('lho-items-grid');
-    const paginationBar = document.getElementById('lho-pagination-bar');
+    const paginationBars = [
+      document.getElementById('lho-pagination-bar-top'),
+      document.getElementById('lho-pagination-bar')
+    ].filter(Boolean);
     if (!grid) return;
 
     const isBuried = checkIsBuriedPage();
@@ -931,7 +939,10 @@
           </div>
         </div>
       `;
-      if (paginationBar) paginationBar.innerHTML = '';
+      paginationBars.forEach(b => {
+        b.innerHTML = '';
+        b.style.display = 'none';
+      });
       return;
     }
 
@@ -1038,13 +1049,19 @@
   }
 
   function renderPaginationControls(totalResults, totalPages, startIdx, pageCount) {
-    const bar = document.getElementById('lho-pagination-bar');
-    if (!bar) return;
+    const bars = [
+      document.getElementById('lho-pagination-bar-top'),
+      document.getElementById('lho-pagination-bar')
+    ].filter(Boolean);
+    if (bars.length === 0) return;
 
     if (pageSize === 'all' || totalPages <= 1) {
-      bar.innerHTML = `
-        <span style="color: var(--lho-text-muted);">Showing all <b>${totalResults}</b> items</span>
-      `;
+      bars.forEach(bar => {
+        bar.style.display = totalResults > 0 ? 'flex' : 'none';
+        bar.innerHTML = `
+          <span style="color: var(--lho-text-muted);">Showing all <b>${totalResults}</b> items</span>
+        `;
+      });
       return;
     }
 
@@ -1072,23 +1089,26 @@
       pagesHtml += `<button type="button" class="lho-page-btn" data-page="${currentPage + 1}">Next »</button>`;
     }
 
-    bar.innerHTML = `
-      <span style="color: var(--lho-text-muted);">
-        Showing <b>${startIdx + 1}–${startIdx + pageCount}</b> of <b>${totalResults}</b> items
-      </span>
-      <div class="lho-page-nav">
-        ${pagesHtml}
-      </div>
-    `;
+    bars.forEach(bar => {
+      bar.style.display = 'flex';
+      bar.innerHTML = `
+        <span style="color: var(--lho-text-muted);">
+          Showing <b>${startIdx + 1}–${startIdx + pageCount}</b> of <b>${totalResults}</b> items
+        </span>
+        <div class="lho-page-nav">
+          ${pagesHtml}
+        </div>
+      `;
 
-    bar.querySelectorAll('.lho-page-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const p = parseInt(btn.dataset.page, 10);
-        if (p && p !== currentPage) {
-          currentPage = p;
-          renderItemsGrid();
-          document.getElementById('lioden-hoard-organizer').scrollIntoView({ behavior: 'smooth' });
-        }
+      bar.querySelectorAll('.lho-page-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const p = parseInt(btn.dataset.page, 10);
+          if (p && p !== currentPage) {
+            currentPage = p;
+            renderItemsGrid();
+            document.getElementById('lioden-hoard-organizer').scrollIntoView({ behavior: 'smooth' });
+          }
+        });
       });
     });
   }
