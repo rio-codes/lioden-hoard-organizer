@@ -32,6 +32,8 @@
   let categoryFilter = 'all';
   let sortBy = 'name_asc';
   let pageSize = 'all'; // 'all', 60, 120, 240
+  let currentTheme = 'auto'; // 'auto', 'day', 'night', 'desert'
+  let resolvedTheme = 'day'; // 'day', 'night', 'desert'
   let currentPage = 1;
   let isFolderViewEnabled = true;
   let isFoldersCollapsed = false;
@@ -186,6 +188,7 @@
             pageSize = ps;
           }
           if (typeof settings.foldersCollapsed === 'boolean') isFoldersCollapsed = settings.foldersCollapsed;
+          if (settings.theme) currentTheme = settings.theme;
 
           resolve();
         });
@@ -210,6 +213,7 @@
           pageSize = ps;
         }
         if (typeof settings.foldersCollapsed === 'boolean') isFoldersCollapsed = settings.foldersCollapsed;
+        if (settings.theme) currentTheme = settings.theme;
 
         resolve();
       }
@@ -227,7 +231,9 @@
       activeFolderId: activeFolderId,
       sortBy: sortBy,
       pageSize: pageSize,
-      foldersCollapsed: isFoldersCollapsed
+      foldersCollapsed: isFoldersCollapsed,
+      theme: currentTheme,
+      detectedTheme: resolvedTheme
     };
 
     return new Promise((resolve) => {
@@ -436,11 +442,68 @@
       }
     });
 
+    // Apply theme (Day, Night, Desert, or Auto)
+    applyTheme();
+
     // Render full organizer
     renderOrganizer();
 
     // Update view mode display
     updateViewMode();
+  }
+
+  function detectLiodenTheme() {
+    // 1. Check <link rel="stylesheet"> in document head
+    const links = Array.from(document.querySelectorAll('link[rel="stylesheet"]'));
+    for (const link of links) {
+      const href = (link.getAttribute('href') || '').toLowerCase();
+      if (href.includes('night')) return 'night';
+      if (href.includes('desert')) return 'desert';
+    }
+
+    // 2. Check CSS custom property --bg-container-color from Lioden theme stylesheets
+    try {
+      const rootStyle = window.getComputedStyle(document.documentElement);
+      const bgContainer = (rootStyle.getPropertyValue('--bg-container-color') || '').trim().toLowerCase();
+      if (bgContainer === '#8ca5a1' || bgContainer.includes('140, 165, 161') || bgContainer.includes('140,165,161')) return 'night';
+      if (bgContainer === '#dec09a' || bgContainer.includes('222, 192, 154') || bgContainer.includes('222,192,154')) return 'desert';
+    } catch (e) {}
+
+    // 3. Check computed style of native Lioden header / topbar elements
+    try {
+      const topbar = document.querySelector('.topbar, .table .top, th.top');
+      if (topbar) {
+        const topbarBg = window.getComputedStyle(topbar).backgroundColor;
+        if (topbarBg === 'rgb(69, 89, 90)' || topbarBg === '#45595a') return 'night';
+        if (topbarBg === 'rgb(122, 90, 66)' || topbarBg === '#7a5a42') return 'desert';
+        if (topbarBg === 'rgb(109, 56, 31)' || topbarBg === '#6d381f') return 'day';
+      }
+    } catch (e) {}
+
+    // 4. Check body background-image
+    try {
+      const bodyBg = (window.getComputedStyle(document.body).backgroundImage || '').toLowerCase();
+      if (bodyBg.includes('nightbg') || bodyBg.includes('night')) return 'night';
+      if (bodyBg.includes('desertbg') || bodyBg.includes('desert')) return 'desert';
+    } catch (e) {}
+
+    return 'day';
+  }
+
+  function applyTheme() {
+    if (currentTheme === 'auto') {
+      resolvedTheme = detectLiodenTheme();
+    } else {
+      resolvedTheme = currentTheme;
+    }
+
+    document.documentElement.setAttribute('data-lho-theme', resolvedTheme);
+    document.body.setAttribute('data-lho-theme', resolvedTheme);
+
+    const root = document.getElementById('lioden-hoard-organizer');
+    if (root) {
+      root.setAttribute('data-theme', resolvedTheme);
+    }
   }
 
   function updateViewMode() {
@@ -621,6 +684,15 @@
         </div>
 
         <div class="lho-filter-group">
+          <!-- Theme -->
+          <span style="font-size: 11px; color: var(--lho-text-muted);">Theme:</span>
+          <select class="lho-select" id="lho-theme-select" title="Color Theme (Auto detects Lioden's Day, Night, or Desert theme)">
+            <option value="auto" ${currentTheme === 'auto' ? 'selected' : ''}>Auto (${resolvedTheme ? (resolvedTheme.charAt(0).toUpperCase() + resolvedTheme.slice(1)) : 'Site'})</option>
+            <option value="day" ${currentTheme === 'day' ? 'selected' : ''}>Day Mode</option>
+            <option value="night" ${currentTheme === 'night' ? 'selected' : ''}>Night Mode</option>
+            <option value="desert" ${currentTheme === 'desert' ? 'selected' : ''}>Desert Mode</option>
+          </select>
+
           <!-- Page Limit -->
           <span style="font-size: 11px; color: var(--lho-text-muted);">Display:</span>
           <select class="lho-select" id="lho-pagesize-select" title="Items per page (evenly fills grid rows)">
@@ -1241,6 +1313,19 @@
         sortBy = e.target.value;
         saveStorageData();
         renderItemsGrid();
+      });
+    }
+
+    // Theme Select
+    const themeSelect = root.querySelector('#lho-theme-select');
+    if (themeSelect) {
+      themeSelect.addEventListener('change', (e) => {
+        currentTheme = e.target.value;
+        applyTheme();
+        saveStorageData();
+        renderOrganizer();
+        const displayThemeName = currentTheme === 'auto' ? `Auto (${resolvedTheme})` : (currentTheme.charAt(0).toUpperCase() + currentTheme.slice(1));
+        showToast(`Theme updated to ${displayThemeName}`);
       });
     }
 
@@ -2406,6 +2491,19 @@
         </div>
         <div class="lho-modal-body">
           <div class="lho-form-group">
+            <label class="lho-form-label">Theme Appearance</label>
+            <p style="font-size: 12px; color: var(--lho-text-muted); margin-top: 2px;">
+              Automatically matches Lioden's Day, Night, or Desert theme, or choose a fixed mode.
+            </p>
+            <select class="lho-select" id="lho-modal-theme-select" style="width: 100%; margin-top: 6px;">
+              <option value="auto" ${currentTheme === 'auto' ? 'selected' : ''}>Auto-detect (Current: ${resolvedTheme.charAt(0).toUpperCase() + resolvedTheme.slice(1)})</option>
+              <option value="day" ${currentTheme === 'day' ? 'selected' : ''}>Day Mode (Classic Savanna)</option>
+              <option value="night" ${currentTheme === 'night' ? 'selected' : ''}>Night Mode (Muted Slate / Night)</option>
+              <option value="desert" ${currentTheme === 'desert' ? 'selected' : ''}>Desert Mode (Warm Sandstone)</option>
+            </select>
+          </div>
+
+          <div class="lho-form-group" style="margin-top: 20px; border-top: 1px solid var(--lho-border); padding-top: 15px;">
             <label class="lho-form-label">Export / Backup Folders</label>
             <p style="font-size: 12px; color: var(--lho-text-muted); margin-top: 2px;">
               Download a backup JSON file containing all your folders and item assignments.
@@ -2444,6 +2542,19 @@
     `;
 
     document.body.appendChild(backdrop);
+
+    // Theme Selection Handler
+    const modalThemeSelect = backdrop.querySelector('#lho-modal-theme-select');
+    if (modalThemeSelect) {
+      modalThemeSelect.addEventListener('change', (e) => {
+        currentTheme = e.target.value;
+        applyTheme();
+        saveStorageData();
+        renderOrganizer();
+        const displayThemeName = currentTheme === 'auto' ? `Auto (${resolvedTheme})` : (currentTheme.charAt(0).toUpperCase() + currentTheme.slice(1));
+        showToast(`Theme updated to ${displayThemeName}`);
+      });
+    }
 
     // Export Handler
     backdrop.querySelector('#lho-btn-export-json').addEventListener('click', () => {

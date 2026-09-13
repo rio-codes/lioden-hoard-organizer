@@ -1,24 +1,136 @@
 /* ==========================================================================
    Lioden Hoard Organizer - Stylesheet
-   Matches Lioden theme (#6D381F, #f5ebd7, #d5c7a5) with modern UX enhancements
+   Theme support: Day (Classic Savanna), Night (Muted Slate), and Desert (Sandstone)
    ========================================================================== */
 
-:root {
+/* 1. Day Mode (Default) - Matches Lioden's signature warm savanna palette */
+:root,
+:root[data-lho-theme="day"],
+body[data-lho-theme="day"],
+#lioden-hoard-organizer[data-theme="day"] {
   --lho-primary: #6D381F;
   --lho-primary-dark: #4A2311;
   --lho-primary-light: #8E4C2A;
   --lho-accent: #C78B2A;
   --lho-accent-light: #E7AB48;
+  --lho-accent-border: #A36F1A;
   --lho-bg-cream: #FAF6ED;
   --lho-bg-card: #FFFFFF;
+  --lho-bg-card-selected: #FFFBF5;
+  --lho-bg-tabs: #EFE7D8;
+  --lho-bg-banner: #F4ECE1;
+  --lho-bg-toolbar: #FAF6ED;
+  --lho-bg-bulk-bar: #FFF5E0;
+  --lho-bg-modal-footer: #EFE7D8;
   --lho-border: #D5C7A5;
   --lho-border-dark: #B8A57D;
+  --lho-border-light: #F0E8D9;
   --lho-text: #3D2616;
   --lho-text-muted: #7A6352;
   --lho-success: #4E7A36;
   --lho-danger: #A32A2A;
   --lho-shadow: 0 2px 8px rgba(74, 35, 17, 0.12);
   --lho-shadow-hover: 0 4px 14px rgba(74, 35, 17, 0.2);
+  --lho-shadow-active: 0 2px 6px rgba(109, 56, 31, 0.3);
+  --lho-focus-glow: rgba(199, 139, 42, 0.3);
+  --lho-scrollbar-thumb: #C4A882;
+  --lho-scrollbar-thumb-hover: #A6845B;
+  --lho-tab-badge-bg: #E7DDCA;
+  --lho-tab-hover-bg: #FFFAF2;
+  --lho-popover-hover-bg: #F5EFE4;
+  --lho-chip-hover-bg: #F2E9DA;
+  --lho-buried-banner-bg: #ECE0D1;
+  --lho-buried-banner-border: #8B6645;
+  --lho-buried-banner-text: #4A331E;
+  --lho-tooltip-bg: rgba(35, 18, 9, 0.95);
+  --lho-tooltip-border: #8E4C2A;
+  --lho-tooltip-title: #F8D38D;
+}
+
+/* 2. Night Mode - Matches Lioden's slate cyan / cool dark night theme */
+:root[data-lho-theme="night"],
+body[data-lho-theme="night"],
+#lioden-hoard-organizer[data-theme="night"] {
+  --lho-primary: #45595A;
+  --lho-primary-dark: #2F3D3E;
+  --lho-primary-light: #5F7A7C;
+  --lho-accent: #507775;
+  --lho-accent-light: #6A9693;
+  --lho-accent-border: #385654;
+  --lho-bg-cream: #D6E1DD;
+  --lho-bg-card: #FFFFFF;
+  --lho-bg-card-selected: #EBF1EF;
+  --lho-bg-tabs: #C5D4CF;
+  --lho-bg-banner: #CCD8D4;
+  --lho-bg-toolbar: #D6E1DD;
+  --lho-bg-bulk-bar: #CCE0DC;
+  --lho-bg-modal-footer: #C5D4CF;
+  --lho-border: #99ADA8;
+  --lho-border-dark: #6F8884;
+  --lho-border-light: #BDCDC9;
+  --lho-text: #1A2D30;
+  --lho-text-muted: #4B6664;
+  --lho-success: #3D754B;
+  --lho-danger: #9E3535;
+  --lho-shadow: 0 2px 8px rgba(20, 42, 47, 0.14);
+  --lho-shadow-hover: 0 4px 14px rgba(20, 42, 47, 0.24);
+  --lho-shadow-active: 0 2px 6px rgba(45, 65, 66, 0.35);
+  --lho-focus-glow: rgba(80, 119, 117, 0.35);
+  --lho-scrollbar-thumb: #99ADA8;
+  --lho-scrollbar-thumb-hover: #6F8884;
+  --lho-tab-badge-bg: #B5C7C2;
+  --lho-tab-hover-bg: #E8F0ED;
+  --lho-popover-hover-bg: #D4E0DC;
+  --lho-chip-hover-bg: #C5D4CF;
+  --lho-buried-banner-bg: #C2D2CD;
+  --lho-buried-banner-border: #45595A;
+  --lho-buried-banner-text: #1A2D30;
+  --lho-tooltip-bg: rgba(20, 36, 38, 0.95);
+  --lho-tooltip-border: #5F7A7C;
+  --lho-tooltip-title: #9DE0DA;
+}
+
+/* 3. Desert Mode - Matches Lioden's warm sandstone / desert bronze theme */
+:root[data-lho-theme="desert"],
+body[data-lho-theme="desert"],
+#lioden-hoard-organizer[data-theme="desert"] {
+  --lho-primary: #7A5A42;
+  --lho-primary-dark: #543C2A;
+  --lho-primary-light: #9E7757;
+  --lho-accent: #C97D3C;
+  --lho-accent-light: #DE924F;
+  --lho-accent-border: #A66126;
+  --lho-bg-cream: #F4E4C6;
+  --lho-bg-card: #FFFFFF;
+  --lho-bg-card-selected: #FFF5E5;
+  --lho-bg-tabs: #E5D0AE;
+  --lho-bg-banner: #EAD7BC;
+  --lho-bg-toolbar: #F4E4C6;
+  --lho-bg-bulk-bar: #FDE8CB;
+  --lho-bg-modal-footer: #E5D0AE;
+  --lho-border: #CAA983;
+  --lho-border-dark: #A67D55;
+  --lho-border-light: #E0CDB5;
+  --lho-text: #3F2715;
+  --lho-text-muted: #755135;
+  --lho-success: #4E7A36;
+  --lho-danger: #A32A2A;
+  --lho-shadow: 0 2px 8px rgba(73, 54, 40, 0.13);
+  --lho-shadow-hover: 0 4px 14px rgba(73, 54, 40, 0.22);
+  --lho-shadow-active: 0 2px 6px rgba(122, 90, 66, 0.3);
+  --lho-focus-glow: rgba(201, 125, 60, 0.35);
+  --lho-scrollbar-thumb: #CAA983;
+  --lho-scrollbar-thumb-hover: #A67D55;
+  --lho-tab-badge-bg: #DEC29F;
+  --lho-tab-hover-bg: #FFF8ED;
+  --lho-popover-hover-bg: #EEDCC4;
+  --lho-chip-hover-bg: #E5D0AE;
+  --lho-buried-banner-bg: #DECAAB;
+  --lho-buried-banner-border: #7A5A42;
+  --lho-buried-banner-text: #3F2715;
+  --lho-tooltip-bg: rgba(50, 30, 15, 0.95);
+  --lho-tooltip-border: #9E7757;
+  --lho-tooltip-title: #FBD8A5;
 }
 
 /* Root Organizer Container */
@@ -100,7 +212,7 @@
 .lho-btn-primary {
   background: var(--lho-accent);
   color: #FFF !important;
-  border-color: #A36F1A;
+  border-color: var(--lho-accent-border);
 }
 .lho-btn-primary:hover {
   background: var(--lho-accent-light);
@@ -118,12 +230,12 @@
 }
 
 .lho-btn-outline {
-  background: #FFF;
+  background: var(--lho-bg-card);
   color: var(--lho-text) !important;
   border-color: var(--lho-border-dark);
 }
 .lho-btn-outline:hover {
-  background: #F3ECE0;
+  background: var(--lho-tab-hover-bg);
   border-color: var(--lho-primary);
 }
 
@@ -142,7 +254,7 @@
 
 /* Folder Tabs Navigation */
 .lho-tabs-wrapper {
-  background: #EFE7D8;
+  background: var(--lho-bg-tabs);
   border-bottom: 1px solid var(--lho-border);
   padding: 8px 12px;
   display: flex;
@@ -173,7 +285,7 @@
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
-  scrollbar-color: #C4A882 transparent;
+  scrollbar-color: var(--lho-scrollbar-thumb) transparent;
 }
 
 .lho-tabs-container.is-collapsed .lho-tab {
@@ -190,12 +302,12 @@
 }
 
 .lho-tabs-container.is-collapsed::-webkit-scrollbar-thumb {
-  background: #C4A882;
+  background: var(--lho-scrollbar-thumb);
   border-radius: 4px;
 }
 
 .lho-tabs-container.is-collapsed::-webkit-scrollbar-thumb:hover {
-  background: #A6845B;
+  background: var(--lho-scrollbar-thumb-hover);
 }
 
 /* Tabs Collapse Toggle Button */
@@ -214,7 +326,7 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  background: #FFF;
+  background: var(--lho-bg-card);
   border: 1px solid var(--lho-border-dark);
   border-radius: 14px;
   padding: 4px 9px;
@@ -229,7 +341,7 @@
 }
 
 .lho-tabs-toggle-btn:hover {
-  background: #FAF4E8;
+  background: var(--lho-tab-hover-bg);
   border-color: var(--lho-accent);
   color: var(--lho-accent);
 }
@@ -244,7 +356,7 @@
   align-items: center;
   gap: 6px;
   padding: 6px 14px;
-  background: #FFF;
+  background: var(--lho-bg-card);
   border: 1px solid var(--lho-border);
   border-radius: 20px;
   cursor: pointer;
@@ -258,7 +370,7 @@
 
 .lho-tab:hover {
   border-color: var(--lho-accent);
-  background: #FFFAF2;
+  background: var(--lho-tab-hover-bg);
   transform: translateY(-1px);
 }
 
@@ -266,7 +378,7 @@
   background: var(--lho-primary);
   color: #FFF;
   border-color: var(--lho-primary-dark);
-  box-shadow: 0 2px 6px rgba(109, 56, 31, 0.3);
+  box-shadow: var(--lho-shadow-active);
 }
 
 .lho-tab.active .lho-tab-count {
@@ -288,7 +400,7 @@
 }
 
 .lho-tab-count {
-  background: #E7DDCA;
+  background: var(--lho-tab-badge-bg);
   color: var(--lho-text);
   padding: 1px 7px;
   border-radius: 10px;
@@ -299,10 +411,10 @@
 /* Drag over folder tab */
 .lho-tab.drag-over {
   border: 2px dashed var(--lho-accent) !important;
-  background: #FFF3D6 !important;
+  background: var(--lho-bg-card-selected) !important;
   color: var(--lho-primary) !important;
   transform: scale(1.06);
-  box-shadow: 0 0 10px rgba(199, 139, 42, 0.5);
+  box-shadow: 0 0 10px var(--lho-focus-glow);
 }
 
 .lho-tab-menu-btn {
@@ -321,7 +433,7 @@
 /* Active Folder Banner */
 .lho-folder-banner {
   padding: 8px 16px;
-  background: #F4ECE1;
+  background: var(--lho-bg-banner);
   border-bottom: 1px solid var(--lho-border);
   display: flex;
   justify-content: space-between;
@@ -332,13 +444,13 @@
 /* Buried Mode Notice Banner */
 .lho-buried-banner {
   padding: 10px 16px;
-  background: #ECE0D1;
-  border-bottom: 1px solid #8B6645;
+  background: var(--lho-buried-banner-bg);
+  border-bottom: 1px solid var(--lho-buried-banner-border);
   display: flex;
   justify-content: space-between;
   align-items: center;
   font-size: 12.5px;
-  color: #4A331E;
+  color: var(--lho-buried-banner-text);
   gap: 12px;
 }
 
@@ -354,7 +466,7 @@
 }
 
 .lho-buried-banner a {
-  color: #2F4C6E;
+  color: var(--lho-primary);
   font-weight: bold;
   text-decoration: underline;
   white-space: nowrap;
@@ -383,7 +495,7 @@
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 12px;
-  background: #FAF6ED;
+  background: var(--lho-bg-toolbar);
   border-bottom: 1px solid var(--lho-border);
 }
 
@@ -405,7 +517,7 @@
   font-size: 12px;
   border: 1px solid var(--lho-border-dark);
   border-radius: 16px;
-  background: #FFF;
+  background: var(--lho-bg-card);
   color: var(--lho-text);
   width: 200px;
   transition: all 0.2s ease;
@@ -414,7 +526,7 @@
   outline: none;
   border-color: var(--lho-accent);
   width: 240px;
-  box-shadow: 0 0 5px rgba(199, 139, 42, 0.3);
+  box-shadow: 0 0 5px var(--lho-focus-glow);
 }
 
 .lho-search-icon {
@@ -442,19 +554,20 @@
   font-size: 12px;
   border: 1px solid var(--lho-border-dark);
   border-radius: 5px;
-  background: #FFF;
+  background: var(--lho-bg-card);
   color: var(--lho-text);
   cursor: pointer;
 }
 .lho-select:focus {
   outline: none;
   border-color: var(--lho-accent);
+  box-shadow: 0 0 5px var(--lho-focus-glow);
 }
 
 /* Multi-select Bulk Actions Bar */
 .lho-bulk-bar {
-  background: #FFF5E0;
-  border-bottom: 1px solid #E2D3B3;
+  background: var(--lho-bg-bulk-bar);
+  border-bottom: 1px solid var(--lho-border-dark);
   padding: 8px 16px;
   display: none;
   align-items: center;
@@ -507,7 +620,7 @@
 }
 
 .lho-card {
-  background: #FFF;
+  background: var(--lho-bg-card);
   border: 1px solid var(--lho-border);
   border-radius: 6px;
   display: flex;
@@ -528,8 +641,8 @@
 
 .lho-card.selected {
   border-color: var(--lho-primary);
-  background: #FFFBF5;
-  box-shadow: 0 0 0 2px rgba(109, 56, 31, 0.25);
+  background: var(--lho-bg-card-selected);
+  box-shadow: 0 0 0 2px var(--lho-primary);
 }
 
 .lho-card.dragging {
@@ -596,7 +709,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-top: 1px solid #F0E8D9;
+  border-top: 1px solid var(--lho-border-light);
   padding-top: 4px;
   margin-top: 4px;
   font-size: 10px;
@@ -628,7 +741,7 @@
   transition: all 0.15s ease;
 }
 .lho-card-folder-btn:hover {
-  background: #EFE7D8;
+  background: var(--lho-bg-tabs);
   color: var(--lho-primary);
 }
 
@@ -674,7 +787,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 10px 16px;
-  background: #F4ECE1;
+  background: var(--lho-bg-banner);
   border-top: 1px solid var(--lho-border);
   border-bottom-left-radius: 7px;
   border-bottom-right-radius: 7px;
@@ -692,7 +805,7 @@
 .lho-page-btn {
   padding: 3px 8px;
   border: 1px solid var(--lho-border-dark);
-  background: #FFF;
+  background: var(--lho-bg-card);
   border-radius: 4px;
   cursor: pointer;
   font-size: 11px;
@@ -702,7 +815,7 @@
   text-align: center;
 }
 .lho-page-btn:hover {
-  background: #F0E6D5;
+  background: var(--lho-tab-hover-bg);
   border-color: var(--lho-accent);
 }
 .lho-page-btn.active {
@@ -719,7 +832,7 @@
 .lho-popover {
   position: absolute;
   z-index: 10000;
-  background: #FFF;
+  background: var(--lho-bg-card);
   border: 1px solid var(--lho-border-dark);
   border-radius: 6px;
   box-shadow: 0 4px 16px rgba(0,0,0,0.2);
@@ -741,7 +854,7 @@
   font-weight: bold;
   font-size: 11px;
   color: var(--lho-primary);
-  border-bottom: 1px solid #F0E8D9;
+  border-bottom: 1px solid var(--lho-border-light);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -756,13 +869,13 @@
   transition: background 0.12s ease;
 }
 .lho-popover-item:hover {
-  background: #F5EFE4;
+  background: var(--lho-popover-hover-bg);
   color: var(--lho-primary);
 }
 
 .lho-popover-divider {
   height: 1px;
-  background: #F0E8D9;
+  background: var(--lho-border-light);
   margin: 4px 0;
 }
 
@@ -783,7 +896,7 @@
 }
 
 .lho-modal {
-  background: #FAF6ED;
+  background: var(--lho-bg-cream);
   border: 2px solid var(--lho-border);
   border-radius: 10px;
   box-shadow: 0 10px 30px rgba(0,0,0,0.35);
@@ -846,13 +959,15 @@
   padding: 7px 10px;
   border: 1px solid var(--lho-border-dark);
   border-radius: 5px;
-  background: #FFF;
+  background: var(--lho-bg-card);
+  color: var(--lho-text);
   font-size: 13px;
   box-sizing: border-box;
 }
 .lho-form-input:focus {
   outline: none;
   border-color: var(--lho-accent);
+  box-shadow: 0 0 5px var(--lho-focus-glow);
 }
 
 .lho-color-palette {
@@ -891,12 +1006,12 @@
   padding: 4px 8px;
   border: 1px solid var(--lho-border);
   border-radius: 6px;
-  background: #FFF;
+  background: var(--lho-bg-card);
   cursor: pointer;
   transition: all 0.15s ease;
 }
 .lho-icon-choice:hover {
-  background: #F0E6D5;
+  background: var(--lho-tab-hover-bg);
   border-color: var(--lho-accent);
 }
 .lho-icon-choice.selected {
@@ -907,7 +1022,7 @@
 
 .lho-modal-footer {
   padding: 12px 18px;
-  background: #EFE7D8;
+  background: var(--lho-bg-modal-footer);
   border-top: 1px solid var(--lho-border);
   display: flex;
   justify-content: flex-end;
@@ -918,7 +1033,7 @@
 .lho-tooltip {
   position: fixed;
   z-index: 100000;
-  background: rgba(35, 18, 9, 0.95);
+  background: var(--lho-tooltip-bg);
   color: #FFF;
   padding: 8px 12px;
   border-radius: 6px;
@@ -927,13 +1042,13 @@
   max-width: 250px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.3);
   pointer-events: none;
-  border: 1px solid #8E4C2A;
+  border: 1px solid var(--lho-tooltip-border);
   animation: lhoFadeIn 0.12s ease;
 }
 
 .lho-tooltip-title {
   font-weight: bold;
-  color: #F8D38D;
+  color: var(--lho-tooltip-title);
   margin-bottom: 3px;
   font-size: 12px;
 }
@@ -971,7 +1086,7 @@
 
 /* Classic view indicator badge */
 .lho-classic-banner {
-  background: #F5EFE4;
+  background: var(--lho-bg-banner);
   border: 1px dashed var(--lho-border-dark);
   border-radius: 6px;
   padding: 8px 14px;
@@ -980,6 +1095,7 @@
   justify-content: space-between;
   align-items: center;
   font-size: 12px;
+  color: var(--lho-text);
 }
 
 /* Hidden helper class */
@@ -1007,7 +1123,7 @@
   height: 44px;
   border-radius: 8px;
   border: 2px solid var(--lho-accent);
-  background: #FFF;
+  background: var(--lho-bg-card);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -1022,14 +1138,15 @@
   padding: 8px 12px;
   border: 1px solid var(--lho-border-dark);
   border-radius: 6px;
-  background: #FFF;
+  background: var(--lho-bg-card);
+  color: var(--lho-text);
   font-size: 13px;
   box-sizing: border-box;
 }
 .lho-emoji-search-input:focus {
   outline: none;
   border-color: var(--lho-accent);
-  box-shadow: 0 0 5px rgba(199, 139, 42, 0.3);
+  box-shadow: 0 0 5px var(--lho-focus-glow);
 }
 
 .lho-emoji-cat-bar {
@@ -1044,7 +1161,7 @@
   padding: 3px 8px;
   font-size: 11px;
   font-weight: 600;
-  background: #FFF;
+  background: var(--lho-bg-card);
   border: 1px solid var(--lho-border);
   border-radius: 12px;
   cursor: pointer;
@@ -1053,7 +1170,7 @@
   transition: all 0.12s ease;
 }
 .lho-emoji-cat-chip:hover {
-  background: #F2E9DA;
+  background: var(--lho-chip-hover-bg);
   border-color: var(--lho-accent);
 }
 .lho-emoji-cat-chip.active {
@@ -1065,7 +1182,7 @@
 .lho-emoji-grid-wrap {
   border: 1px solid var(--lho-border-dark);
   border-radius: 6px;
-  background: #FFF;
+  background: var(--lho-bg-card);
   max-height: 180px;
   overflow-y: auto;
   padding: 6px;
@@ -1091,7 +1208,7 @@
   user-select: none;
 }
 .lho-emoji-btn:hover {
-  background: #F4EDE1;
+  background: var(--lho-tab-hover-bg);
   transform: scale(1.18);
   z-index: 2;
 }
@@ -1145,13 +1262,13 @@
 .lho-tab.lho-tab-action {
   border-style: dashed;
   border-color: var(--lho-border-dark);
-  background: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.4);
   color: var(--lho-text-muted);
   font-weight: 500;
   font-size: 11px;
 }
 .lho-tab.lho-tab-action:hover {
-  background: #FFF;
+  background: var(--lho-bg-card);
   border-color: var(--lho-accent);
   color: var(--lho-primary);
 }
@@ -1241,9 +1358,9 @@
     left: 0;
     right: 0;
     z-index: 99990;
-    background: #FFF8EA;
+    background: var(--lho-bg-bulk-bar);
     border-top: 2px solid var(--lho-accent);
-    box-shadow: 0 -4px 18px rgba(74, 35, 17, 0.25);
+    box-shadow: var(--lho-shadow-hover);
     padding: 10px 14px;
     padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
     display: flex;
@@ -1293,7 +1410,7 @@
     min-height: 30px;
     display: inline-flex;
     align-items: center;
-    background: #F8F2E6;
+    background: var(--lho-bg-tabs);
   }
 
   /* Modal Mobile Adaptations */

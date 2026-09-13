@@ -1,4 +1,5 @@
 const STORAGE_KEY = 'lioden_hoard_organizer_data';
+const SETTINGS_KEY = 'lioden_hoard_organizer_settings';
 
 document.addEventListener('DOMContentLoaded', () => {
   const statFolders = document.getElementById('stat-folders');
@@ -8,16 +9,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function loadData(callback) {
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-      chrome.storage.local.get([STORAGE_KEY], (res) => {
-        callback(res[STORAGE_KEY] || {});
+      chrome.storage.local.get([STORAGE_KEY, SETTINGS_KEY], (res) => {
+        callback(res[STORAGE_KEY] || {}, res[SETTINGS_KEY] || {});
       });
     } else {
       const raw = localStorage.getItem(STORAGE_KEY);
-      callback(raw ? JSON.parse(raw) : {});
+      const rawSettings = localStorage.getItem(SETTINGS_KEY);
+      callback(raw ? JSON.parse(raw) : {}, rawSettings ? JSON.parse(rawSettings) : {});
     }
   }
 
-  loadData((data) => {
+  loadData((data, settings) => {
+    // Apply theme
+    const themeToApply = (settings.theme && settings.theme !== 'auto') 
+      ? settings.theme 
+      : (settings.detectedTheme || 'day');
+    document.body.setAttribute('data-theme', themeToApply);
+
     const folders = data.folders || [];
     const itemMap = data.itemMap || {};
     const instanceMap = data.instanceMap || {};

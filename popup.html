@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <title>Lioden Hoard Organizer</title>
   <style>
-    :root {
+    :root, body[data-theme="day"] {
       --primary: #6D381F;
       --primary-dark: #4A2311;
       --accent: #C78B2A;
@@ -12,6 +12,26 @@
       --border: #D5C7A5;
       --text: #3D2616;
       --text-muted: #7A6352;
+    }
+
+    body[data-theme="night"] {
+      --primary: #45595A;
+      --primary-dark: #2F3D3E;
+      --accent: #507775;
+      --bg: #D6E1DD;
+      --border: #99ADA8;
+      --text: #1A2D30;
+      --text-muted: #4B6664;
+    }
+
+    body[data-theme="desert"] {
+      --primary: #7A5A42;
+      --primary-dark: #543C2A;
+      --accent: #C97D3C;
+      --bg: #F4E4C6;
+      --border: #CAA983;
+      --text: #3F2715;
+      --text-muted: #755135;
     }
 
     * {
