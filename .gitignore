@@ -4,4 +4,6 @@
 scratch/
 *_files/
 dist/
+__pycache__/
+*.pyc
 Organise Hoard ___ Lioden.html
