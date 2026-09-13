@@ -588,8 +588,7 @@
           <div class="lho-buried-banner-text">
             <span class="lho-buried-icon">⛏️</span>
             <div>
-              <b>Buried Items Vault</b> — These items are safe from expiring and cannot be used while buried.
-              Select items and click <b>Dig Up Selected</b>, or use <b>⛏️ Dig Up All</b> to return them to your active hoard.
+              <b>Buried Items Vault</b> — Select items and click <b>Dig Up Selected</b>, or use <b>⛏️ Dig Up All</b> to return them to your active hoard.
             </div>
           </div>
           <a href="${hoardUrl}" class="lho-btn lho-btn-secondary lho-btn-sm">← Return to Active Hoard</a>
@@ -818,13 +817,12 @@
         if (folder !== activeFolderId) return false;
       }
 
-      // Search Query
+      // Search Query (searches item titles only)
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
         const matchesName = (inv.name && inv.name.toLowerCase().includes(q)) || 
                             (inv.nameClean && inv.nameClean.toLowerCase().includes(q));
-        const matchesDesc = inv.description && inv.description.toLowerCase().includes(q);
-        if (!matchesName && !matchesDesc) return false;
+        if (!matchesName) return false;
       }
 
       // Category Filter
@@ -926,7 +924,7 @@
               : isBuried
                 ? (activeFolderId === 'unsorted' && countFolderItems('all') > 0
                     ? 'All buried items have been organized into folders!'
-                    : 'You currently have no buried items. You can bury items from your main hoard to keep them safe.')
+                    : 'You currently have no buried items.')
                 : activeFolderId === 'unsorted'
                   ? 'All items in your hoard have been organized into folders!'
                   : 'This folder is empty. Drag and drop items here, or use the folder menu (📁▾) on any item card.'}
