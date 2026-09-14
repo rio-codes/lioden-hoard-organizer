@@ -9,22 +9,48 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function loadData(callback) {
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-      chrome.storage.local.get([STORAGE_KEY, SETTINGS_KEY], (res) => {
-        callback(res[STORAGE_KEY] || {}, res[SETTINGS_KEY] || {});
+      chrome.storage.local.get(null, (allRes) => {
+        const settings = allRes[SETTINGS_KEY] || {};
+        const mode = settings.linkedAccountsMode || 'shared';
+        let activeKey = STORAGE_KEY;
+        if (mode === 'separate' && settings.lastActiveAccount) {
+          const accKey = STORAGE_KEY + '_' + settings.lastActiveAccount;
+          if (allRes[accKey]) activeKey = accKey;
+        }
+        callback(allRes[activeKey] || allRes[STORAGE_KEY] || {}, settings, activeKey);
       });
     } else {
-      const raw = localStorage.getItem(STORAGE_KEY);
       const rawSettings = localStorage.getItem(SETTINGS_KEY);
-      callback(raw ? JSON.parse(raw) : {}, rawSettings ? JSON.parse(rawSettings) : {});
+      const settings = rawSettings ? JSON.parse(rawSettings) : {};
+      const mode = settings.linkedAccountsMode || 'shared';
+      let activeKey = STORAGE_KEY;
+      if (mode === 'separate' && settings.lastActiveAccount) {
+        const accKey = STORAGE_KEY + '_' + settings.lastActiveAccount;
+        if (localStorage.getItem(accKey)) activeKey = accKey;
+      }
+      const raw = localStorage.getItem(activeKey) || localStorage.getItem(STORAGE_KEY);
+      callback(raw ? JSON.parse(raw) : {}, settings, activeKey);
     }
   }
 
-  loadData((data, settings) => {
+  loadData((data, settings, activeKey) => {
     // Apply theme
     const themeToApply = (settings.theme && settings.theme !== 'auto') 
       ? settings.theme 
       : (settings.detectedTheme || 'day');
     document.body.setAttribute('data-theme', themeToApply);
+
+    // Display account badge if in separate mode
+    const badge = document.getElementById('popup-account-badge');
+    if (badge) {
+      if (settings.linkedAccountsMode === 'separate' && settings.lastActiveAccount) {
+        const acc = (settings.knownAccounts && settings.knownAccounts[settings.lastActiveAccount]) || {};
+        badge.textContent = `👤 Account #${settings.lastActiveAccount}${acc.name ? ` (${acc.name})` : ''} • Separate`;
+        badge.style.display = 'block';
+      } else {
+        badge.style.display = 'none';
+      }
+    }
 
     const folders = data.folders || [];
     const itemMap = data.itemMap || {};
@@ -67,13 +93,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (btnExport) {
     btnExport.addEventListener('click', () => {
-      loadData((data) => {
+      loadData((data, settings) => {
         const extVersion = (typeof chrome !== 'undefined' && chrome.runtime?.getManifest)
-          ? (chrome.runtime.getManifest()?.version || '1.0.2')
-          : '1.0.2';
+          ? (chrome.runtime.getManifest()?.version || '1.1.2')
+          : '1.1.2';
         const exportData = {
           version: extVersion,
           exportedAt: new Date().toISOString(),
+          account: settings.lastActiveAccount || null,
+          linkedAccountsMode: settings.linkedAccountsMode || 'shared',
           folders: data.folders || [],
           itemMap: data.itemMap || {},
           instanceMap: data.instanceMap || {}
@@ -82,7 +110,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `lioden_hoard_folders_${new Date().toISOString().slice(0,10)}.json`;
+        const accSuffix = (settings.linkedAccountsMode === 'separate' && settings.lastActiveAccount) ? `_acc${settings.lastActiveAccount}` : '';
+        a.download = `lioden_hoard_folders${accSuffix}_${new Date().toISOString().slice(0,10)}.json`;
         a.click();
         URL.revokeObjectURL(url);
       });

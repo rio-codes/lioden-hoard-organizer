@@ -15,6 +15,7 @@ A standalone browser extension (Manifest V3) for [Lioden](https://www.lioden.com
 - **Quick-Move Menu**: Click the `📁▾` button on any item card for a fast dropdown to move that item to any folder or create a new one on the fly.
 - **Instant Search & Category Filters**: Search by item name in real time with instant filtering and sorting (Name, Uses, Quantity, Expiring Soonest).
 - **Native Action Support**: Checkboxes and forms remain 100% compatible with Lioden's native actions (e.g. **Bury Checked**).
+- **Linked Accounts Support**: Choose in settings whether your main and side accounts share the same folders or keep separate, independent folder setups with quick one-click folder copying between accounts.
 - **Backup & Restore**: Export your folder configuration and item assignments to a JSON file to transfer between browsers or restore anytime.
 - **Classic View Toggle**: Switch back to Lioden's original unorganized layout at any time with a single click.
 

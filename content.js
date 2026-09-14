@@ -39,6 +39,13 @@
   let isFoldersCollapsed = false;
   let draggingFolderId = null;
 
+  // Linked Accounts State (Main & Side)
+  let currentMid = null;
+  let currentAccountName = '';
+  let linkedAccountsMode = 'shared'; // 'shared' or 'separate'
+  let knownAccounts = {};            // { [mid]: { mid, name, lastSeen } }
+  let activeFolderIdByAccount = {};  // { [mid]: folderId }
+
   // Selected checkbox values across current view
   let selectedItems = new Set(); // Set of string values
 
@@ -103,6 +110,85 @@
   // 1. DATA EXTRACTION FROM LIODEN PAGE
   // =========================================================================
 
+  function extractCurrentAccountInfo() {
+    let mid = null;
+    let name = '';
+
+    // 1. Allow URL or hash override in offline file: mode (e.g. #mid=123456 or ?mid=123456)
+    if (window.location.protocol === 'file:') {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('mid')) mid = urlParams.get('mid');
+      const hashMatch = window.location.hash.match(/mid=(\d+)/);
+      if (hashMatch) mid = hashMatch[1];
+    }
+
+    // 2. DOM #uimid element
+    if (!mid) {
+      const uiMidEl = document.getElementById('uimid');
+      if (uiMidEl && uiMidEl.dataset && uiMidEl.dataset.mid && uiMidEl.dataset.mid !== 'false') {
+        mid = String(uiMidEl.dataset.mid).trim();
+      }
+    }
+
+    // 3. Script tags in DOM (var mid = 12345 or var uid = 12345)
+    if (!mid) {
+      const scripts = Array.from(document.querySelectorAll('script'));
+      for (const s of scripts) {
+        const text = s.textContent || '';
+        const match = text.match(/var\s+(?:mid|uid)\s*=\s*['"]?(\d+)['"]?/);
+        if (match) {
+          mid = match[1];
+          break;
+        }
+      }
+    }
+
+    // 4. Lion profile link in DOM
+    const lionLink = document.querySelector('a[href*="lion.php?mid="]');
+    if (lionLink) {
+      if (!mid) {
+        const match = lionLink.getAttribute('href').match(/mid=(\d+)/);
+        if (match) mid = match[1];
+      }
+      const heading = lionLink.querySelector('h3, h4, b');
+      if (heading) {
+        name = heading.textContent.replace('→', '').trim();
+      } else {
+        name = lionLink.textContent.replace('→', '').trim();
+      }
+    }
+
+    return {
+      mid: mid || null,
+      name: name || (mid ? `Account #${mid}` : 'Default Account')
+    };
+  }
+
+  function checkHasLinkedAccount() {
+    // 1. Native switch account form, link, or hidden input
+    if (document.querySelector('form[action*="account-link"], a[href*="account-link"], input[name="switchaccount"]')) {
+      return true;
+    }
+
+    // 2. Button or submit input with "Switch Account" text
+    const candidates = Array.from(document.querySelectorAll('button, input[type="submit"], input[type="button"], a.button'));
+    if (candidates.some(el => (el.textContent || el.value || '').trim().toLowerCase().includes('switch account'))) {
+      return true;
+    }
+
+    // 3. Known accounts list in storage has more than 1 account recorded
+    if (knownAccounts && Object.keys(knownAccounts).length > 1) {
+      return true;
+    }
+
+    // 4. File protocol preview test mode with mid hash
+    if (window.location.protocol === 'file:' && (window.location.hash.includes('mid=') || document.querySelector('#preview-switch-account'))) {
+      return true;
+    }
+
+    return false;
+  }
+
   function extractHoardData() {
     try {
       const scripts = Array.from(document.querySelectorAll('script'));
@@ -163,84 +249,145 @@
   }
 
   // =========================================================================
-  // 2. STORAGE MANAGEMENT
+  // 2. STORAGE MANAGEMENT (Supports Linked Main & Side Accounts)
   // =========================================================================
+
+  function getActiveAccountStorageKey() {
+    if (linkedAccountsMode === 'separate' && currentMid) {
+      return STORAGE_KEY + '_' + currentMid;
+    }
+    return STORAGE_KEY;
+  }
+
+  function applyLoadedStorage(res) {
+    const settings = res[SETTINGS_KEY] || {};
+    linkedAccountsMode = settings.linkedAccountsMode || 'shared';
+    knownAccounts = settings.knownAccounts || {};
+    activeFolderIdByAccount = settings.activeFolderIdByAccount || {};
+
+    if (currentMid) {
+      knownAccounts[currentMid] = {
+        mid: currentMid,
+        name: currentAccountName,
+        lastSeen: Date.now()
+      };
+    }
+
+    const sharedData = res[STORAGE_KEY] || {};
+    let activeData = sharedData;
+
+    if (linkedAccountsMode === 'separate' && currentMid) {
+      const accountKey = STORAGE_KEY + '_' + currentMid;
+      if (res[accountKey]) {
+        activeData = res[accountKey];
+      } else {
+        // First time in separate mode for this account:
+        // Clone from shared data so user doesn't lose existing folders, or use DEFAULT_FOLDERS
+        if (sharedData && Array.isArray(sharedData.folders) && sharedData.folders.length > 0) {
+          activeData = JSON.parse(JSON.stringify(sharedData));
+        } else {
+          activeData = { folders: DEFAULT_FOLDERS };
+        }
+      }
+    }
+
+    userFolders = activeData.folders || DEFAULT_FOLDERS;
+    itemFolderMap = activeData.itemMap || {};
+    instanceFolderMap = activeData.instanceMap || {};
+
+    if (typeof settings.enabled === 'boolean') isFolderViewEnabled = settings.enabled;
+
+    if (linkedAccountsMode === 'separate' && currentMid) {
+      activeFolderId = activeFolderIdByAccount[currentMid] || activeData.activeFolderId || 'unsorted';
+    } else {
+      activeFolderId = settings.activeFolderId || 'unsorted';
+    }
+
+    if (settings.sortBy) sortBy = settings.sortBy;
+    if (settings.pageSize) {
+      let ps = settings.pageSize;
+      if (ps === '50') ps = '60';
+      else if (ps === '100') ps = '120';
+      else if (ps === '200') ps = '240';
+      pageSize = ps;
+    }
+    if (typeof settings.foldersCollapsed === 'boolean') isFoldersCollapsed = settings.foldersCollapsed;
+    if (settings.theme) currentTheme = settings.theme;
+  }
 
   async function loadStorageData() {
     return new Promise((resolve) => {
+      const accInfo = extractCurrentAccountInfo();
+      currentMid = accInfo.mid;
+      currentAccountName = accInfo.name;
+
+      const keysToGet = [STORAGE_KEY, SETTINGS_KEY];
+      if (currentMid) {
+        keysToGet.push(STORAGE_KEY + '_' + currentMid);
+      }
+
       if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-        chrome.storage.local.get([STORAGE_KEY, SETTINGS_KEY], (res) => {
-          const data = res[STORAGE_KEY] || {};
-          const settings = res[SETTINGS_KEY] || {};
-
-          userFolders = data.folders || DEFAULT_FOLDERS;
-          itemFolderMap = data.itemMap || {};
-          instanceFolderMap = data.instanceMap || {};
-
-          if (typeof settings.enabled === 'boolean') isFolderViewEnabled = settings.enabled;
-          if (settings.activeFolderId) activeFolderId = settings.activeFolderId || 'unsorted';
-          if (settings.sortBy) sortBy = settings.sortBy;
-          if (settings.pageSize) {
-            let ps = settings.pageSize;
-            if (ps === '50') ps = '60';
-            else if (ps === '100') ps = '120';
-            else if (ps === '200') ps = '240';
-            pageSize = ps;
-          }
-          if (typeof settings.foldersCollapsed === 'boolean') isFoldersCollapsed = settings.foldersCollapsed;
-          if (settings.theme) currentTheme = settings.theme;
-
+        chrome.storage.local.get(keysToGet, (res) => {
+          applyLoadedStorage(res || {});
           resolve();
         });
       } else {
-        const rawData = localStorage.getItem(STORAGE_KEY);
-        const rawSettings = localStorage.getItem(SETTINGS_KEY);
-        const data = rawData ? JSON.parse(rawData) : {};
-        const settings = rawSettings ? JSON.parse(rawSettings) : {};
-
-        userFolders = data.folders || DEFAULT_FOLDERS;
-        itemFolderMap = data.itemMap || {};
-        instanceFolderMap = data.instanceMap || {};
-
-        if (typeof settings.enabled === 'boolean') isFolderViewEnabled = settings.enabled;
-        if (settings.activeFolderId) activeFolderId = settings.activeFolderId || 'unsorted';
-        if (settings.sortBy) sortBy = settings.sortBy;
-        if (settings.pageSize) {
-          let ps = settings.pageSize;
-          if (ps === '50') ps = '60';
-          else if (ps === '100') ps = '120';
-          else if (ps === '200') ps = '240';
-          pageSize = ps;
-        }
-        if (typeof settings.foldersCollapsed === 'boolean') isFoldersCollapsed = settings.foldersCollapsed;
-        if (settings.theme) currentTheme = settings.theme;
-
+        const res = {};
+        keysToGet.forEach(k => {
+          const raw = localStorage.getItem(k);
+          if (raw) {
+            try { res[k] = JSON.parse(raw); } catch (e) {}
+          }
+        });
+        applyLoadedStorage(res);
         resolve();
       }
     });
   }
 
   async function saveStorageData() {
+    const isSeparate = (linkedAccountsMode === 'separate' && currentMid);
+    const activeStorageKey = isSeparate ? (STORAGE_KEY + '_' + currentMid) : STORAGE_KEY;
+
     const data = {
       folders: userFolders,
       itemMap: itemFolderMap,
-      instanceMap: instanceFolderMap
+      instanceMap: instanceFolderMap,
+      activeFolderId: activeFolderId,
+      updatedAt: Date.now()
     };
+
+    if (currentMid) {
+      knownAccounts[currentMid] = {
+        mid: currentMid,
+        name: currentAccountName,
+        lastSeen: Date.now()
+      };
+      activeFolderIdByAccount[currentMid] = activeFolderId;
+    }
+
     const settings = {
       enabled: isFolderViewEnabled,
       activeFolderId: activeFolderId,
+      activeFolderIdByAccount: activeFolderIdByAccount,
       sortBy: sortBy,
       pageSize: pageSize,
       foldersCollapsed: isFoldersCollapsed,
       theme: currentTheme,
-      detectedTheme: resolvedTheme
+      detectedTheme: resolvedTheme,
+      linkedAccountsMode: linkedAccountsMode,
+      knownAccounts: knownAccounts,
+      lastActiveAccount: currentMid
     };
 
     return new Promise((resolve) => {
       if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-        chrome.storage.local.set({ [STORAGE_KEY]: data, [SETTINGS_KEY]: settings }, resolve);
+        chrome.storage.local.set({
+          [activeStorageKey]: data,
+          [SETTINGS_KEY]: settings
+        }, resolve);
       } else {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        localStorage.setItem(activeStorageKey, JSON.stringify(data));
         localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
         resolve();
       }
@@ -389,11 +536,24 @@
       }
     });
 
-    // Listen for hashchange (for file: offline testing between #hoard and #buried and #stack)
-    window.addEventListener('hashchange', () => {
+    // Listen for hashchange (for file: offline testing between #hoard and #buried and #stack and #mid=...)
+    window.addEventListener('hashchange', async () => {
       const curRoot = document.getElementById('lioden-hoard-organizer');
       const curBanner = document.getElementById('lho-classic-banner');
       const curFraHoard = document.getElementById('fraHoardList');
+
+      // Check if simulated account ID changed via hash (e.g. #mid=999888)
+      const newAcc = extractCurrentAccountInfo();
+      if (newAcc.mid && newAcc.mid !== currentMid) {
+        currentMid = newAcc.mid;
+        currentAccountName = newAcc.name;
+        await loadStorageData();
+        selectedItems.clear();
+        currentPage = 1;
+        renderOrganizer();
+        showToast(`Switched view to Account #${currentMid} (${currentAccountName})`);
+        return;
+      }
 
       if (checkIsStackPage()) {
         if (curRoot) curRoot.classList.add('lho-hidden');
@@ -412,7 +572,7 @@
       renderOrganizer();
     });
 
-    // Intercept native sub_menu links in file: preview mode
+    // Intercept native sub_menu links and account switch in file: preview mode
     if (window.location.protocol === 'file:') {
       document.querySelectorAll('.sub_menu a').forEach(a => {
         const href = a.getAttribute('href') || '';
@@ -428,6 +588,15 @@
           });
         }
       });
+
+      const switchForm = document.querySelector('form[action*="account-link.php"]');
+      if (switchForm) {
+        switchForm.addEventListener('submit', (e) => {
+          e.preventDefault();
+          const targetMid = (currentMid === '999888') ? '583579' : '999888';
+          window.location.hash = `#mid=${targetMid}`;
+        });
+      }
     }
 
     // Re-render when window is resized across responsive grid breakpoints to ensure full rows
@@ -558,6 +727,9 @@
         <div class="lho-title-area">
           <span class="lho-title">${isBuried ? '⛏️ Buried Items Organizer' : '🦁 Hoard Organizer'}</span>
           <span class="lho-stats-pill">${totalCount} Items • ${userFolders.length} Folders</span>
+          ${linkedAccountsMode === 'separate' && currentMid ? `
+            <span class="lho-stats-pill" style="background: var(--lho-accent); color: #fff;" title="Folders specific to ${escapeHtml(currentAccountName)} (#${currentMid})">👤 #${currentMid}</span>
+          ` : ''}
           ${isBuried ? '<span class="lho-stats-pill" style="background:#4A5568;color:#fff;">🪦 Buried Vault</span>' : ''}
         </div>
         <div class="lho-header-actions">
@@ -2511,6 +2683,9 @@
     backdrop.className = 'lho-modal-backdrop';
     backdrop.id = 'lho-modal-backdrop';
 
+    const otherAccounts = Object.keys(knownAccounts).filter(m => m !== currentMid);
+    const hasLinkedAccount = checkHasLinkedAccount() || (linkedAccountsMode === 'separate');
+
     backdrop.innerHTML = `
       <div class="lho-modal">
         <div class="lho-modal-header">
@@ -2518,7 +2693,59 @@
           <button type="button" class="lho-modal-close" id="lho-modal-close">&times;</button>
         </div>
         <div class="lho-modal-body">
+          ${hasLinkedAccount ? `
+          <!-- Linked Accounts Setting -->
           <div class="lho-form-group">
+            <label class="lho-form-label">Linked Accounts (Main & Side)</label>
+            <p style="font-size: 12px; color: var(--lho-text-muted); margin-top: 2px;">
+              Lioden players often have linked main and side accounts. Choose whether both accounts share the same folders or keep separate folders.
+            </p>
+            <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 8px;">
+              <label class="lho-radio-option ${linkedAccountsMode === 'shared' ? 'selected' : ''}">
+                <input type="radio" name="lho-linked-mode" value="shared" ${linkedAccountsMode === 'shared' ? 'checked' : ''} style="margin-top: 2px;">
+                <div>
+                  <div style="font-weight: bold; color: var(--lho-text);">Shared Folders (Default)</div>
+                  <div style="color: var(--lho-text-muted); font-size: 11px; margin-top: 2px;">
+                    Both linked accounts share the exact same folder structure and item assignments.
+                  </div>
+                </div>
+              </label>
+              <label class="lho-radio-option ${linkedAccountsMode === 'separate' ? 'selected' : ''}">
+                <input type="radio" name="lho-linked-mode" value="separate" ${linkedAccountsMode === 'separate' ? 'checked' : ''} style="margin-top: 2px;">
+                <div>
+                  <div style="font-weight: bold; color: var(--lho-text);">Separate Folders per Account</div>
+                  <div style="color: var(--lho-text-muted); font-size: 11px; margin-top: 2px;">
+                    Each linked account has its own independent folders and item assignments.
+                  </div>
+                </div>
+              </label>
+            </div>
+
+            ${currentMid ? `
+              <div style="margin-top: 10px; padding: 8px 12px; background: var(--lho-bg-card-selected); border: 1px solid var(--lho-border); border-radius: 6px; font-size: 11px; display: flex; align-items: center; justify-content: space-between;">
+                <span>Active Account: <b>${escapeHtml(currentAccountName)}</b> (ID: <code>${currentMid}</code>)</span>
+                <span class="lho-stats-pill" style="font-size: 10px; background: ${linkedAccountsMode === 'separate' ? 'var(--lho-accent)' : 'var(--lho-bg-tabs)'}; color: ${linkedAccountsMode === 'separate' ? '#fff' : 'var(--lho-text)'};">
+                  ${linkedAccountsMode === 'separate' ? 'Separate Mode' : 'Shared Mode'}
+                </span>
+              </div>
+            ` : ''}
+
+            <!-- Tools when in Separate Mode -->
+            <div id="lho-separate-tools" style="margin-top: 10px; display: ${linkedAccountsMode === 'separate' && currentMid ? 'flex' : 'none'}; flex-wrap: wrap; gap: 8px;">
+              <button type="button" class="lho-btn lho-btn-outline lho-btn-sm" id="lho-btn-copy-from-shared" title="Copy folders from shared setup into this account">
+                📋 Copy Folders from Shared Setup
+              </button>
+              ${otherAccounts.map(oMid => `
+                <button type="button" class="lho-btn lho-btn-outline lho-btn-sm lho-btn-copy-from-other" data-mid="${oMid}">
+                  📋 Copy from Account #${oMid} (${escapeHtml(knownAccounts[oMid].name || 'Side Account')})
+                </button>
+              `).join('')}
+            </div>
+          </div>
+          ` : ''}
+
+          <!-- Theme Appearance -->
+          <div class="lho-form-group" style="${hasLinkedAccount ? 'margin-top: 20px; border-top: 1px solid var(--lho-border); padding-top: 15px;' : ''}">
             <label class="lho-form-label">Theme Appearance</label>
             <p style="font-size: 12px; color: var(--lho-text-muted); margin-top: 2px;">
               Automatically matches Lioden's Day, Night, or Desert theme, or choose a fixed mode.
@@ -2531,16 +2758,18 @@
             </select>
           </div>
 
+          <!-- Export / Backup Folders -->
           <div class="lho-form-group" style="margin-top: 20px; border-top: 1px solid var(--lho-border); padding-top: 15px;">
             <label class="lho-form-label">Export / Backup Folders</label>
             <p style="font-size: 12px; color: var(--lho-text-muted); margin-top: 2px;">
-              Download a backup JSON file containing all your folders and item assignments.
+              Download a backup JSON file containing all your folders and item assignments${linkedAccountsMode === 'separate' && currentMid ? ` for Account #${currentMid}` : ''}.
             </p>
             <button type="button" class="lho-btn lho-btn-primary lho-btn-sm" id="lho-btn-export-json">
               📥 Export Backup (JSON)
             </button>
           </div>
 
+          <!-- Import / Restore Backup -->
           <div class="lho-form-group" style="margin-top: 20px; border-top: 1px solid var(--lho-border); padding-top: 15px;">
             <label class="lho-form-label">Import / Restore Backup</label>
             <p style="font-size: 12px; color: var(--lho-text-muted); margin-top: 2px;">
@@ -2553,10 +2782,11 @@
             </button>
           </div>
 
+          <!-- Danger Zone -->
           <div class="lho-form-group" style="margin-top: 20px; border-top: 1px solid var(--lho-border); padding-top: 15px;">
             <label class="lho-form-label" style="color: var(--lho-danger);">Danger Zone</label>
             <p style="font-size: 12px; color: var(--lho-text-muted); margin-top: 2px;">
-              Clear all custom folders and item assignments back to default settings.
+              Clear all custom folders and item assignments back to default settings${linkedAccountsMode === 'separate' && currentMid ? ` for Account #${currentMid}` : ''}.
             </p>
             <button type="button" class="lho-btn lho-btn-danger lho-btn-sm" id="lho-btn-reset-all">
               ⚠️ Reset Everything
@@ -2570,6 +2800,108 @@
     `;
 
     document.body.appendChild(backdrop);
+
+    // Linked Accounts Mode Change Handler
+    backdrop.querySelectorAll('input[name="lho-linked-mode"]').forEach(radio => {
+      radio.addEventListener('change', async (e) => {
+        const newMode = e.target.value;
+        if (newMode === linkedAccountsMode) return;
+
+        if (newMode === 'separate') {
+          if (!currentMid) {
+            alert('Could not detect an active Lioden member ID on this page. Separate folders requires a logged-in account.');
+            radio.checked = false;
+            return;
+          }
+          linkedAccountsMode = 'separate';
+          const accountKey = STORAGE_KEY + '_' + currentMid;
+          let existingAccData = null;
+          if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+            existingAccData = await new Promise(r => chrome.storage.local.get([accountKey], res => r(res[accountKey])));
+          } else {
+            const raw = localStorage.getItem(accountKey);
+            if (raw) try { existingAccData = JSON.parse(raw); } catch (err) {}
+          }
+
+          if (existingAccData && Array.isArray(existingAccData.folders)) {
+            userFolders = existingAccData.folders;
+            itemFolderMap = existingAccData.itemMap || {};
+            instanceFolderMap = existingAccData.instanceMap || {};
+          }
+          await saveStorageData();
+          renderOrganizer();
+          closeModal();
+          showToast(`Switched to separate folders for Account #${currentMid}!`);
+        } else {
+          if (!confirm('Switch to shared folders? Both linked accounts will share the same folder list and assignments.')) {
+            const separateRadio = backdrop.querySelector('input[name="lho-linked-mode"][value="separate"]');
+            if (separateRadio) separateRadio.checked = true;
+            return;
+          }
+          linkedAccountsMode = 'shared';
+          await saveStorageData();
+          await loadStorageData();
+          renderOrganizer();
+          closeModal();
+          showToast('Switched to shared folders across linked accounts!');
+        }
+      });
+    });
+
+    // Copy from Shared Setup Handler
+    const btnCopyShared = backdrop.querySelector('#lho-btn-copy-from-shared');
+    if (btnCopyShared) {
+      btnCopyShared.addEventListener('click', async () => {
+        if (!confirm(`Copy folders from shared setup into Account #${currentMid}? This will replace your current account's folders.`)) return;
+        let sharedData = null;
+        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+          sharedData = await new Promise(r => chrome.storage.local.get([STORAGE_KEY], res => r(res[STORAGE_KEY])));
+        } else {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (raw) try { sharedData = JSON.parse(raw); } catch (err) {}
+        }
+        if (sharedData && Array.isArray(sharedData.folders)) {
+          userFolders = JSON.parse(JSON.stringify(sharedData.folders));
+          itemFolderMap = JSON.parse(JSON.stringify(sharedData.itemMap || {}));
+          instanceFolderMap = JSON.parse(JSON.stringify(sharedData.instanceMap || {}));
+        } else {
+          userFolders = [...DEFAULT_FOLDERS];
+          itemFolderMap = {};
+          instanceFolderMap = {};
+        }
+        await saveStorageData();
+        renderOrganizer();
+        closeModal();
+        showToast(`Shared folders copied into Account #${currentMid}!`);
+      });
+    }
+
+    // Copy from Other Account Handlers
+    backdrop.querySelectorAll('.lho-btn-copy-from-other').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const sourceMid = btn.dataset.mid;
+        if (!sourceMid) return;
+        const sourceName = (knownAccounts[sourceMid] && knownAccounts[sourceMid].name) || ('Account #' + sourceMid);
+        if (!confirm(`Copy folders from ${sourceName} into Account #${currentMid}? This will replace your current account's folders.`)) return;
+        const sourceKey = STORAGE_KEY + '_' + sourceMid;
+        let sourceData = null;
+        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+          sourceData = await new Promise(r => chrome.storage.local.get([sourceKey], res => r(res[sourceKey])));
+        } else {
+          const raw = localStorage.getItem(sourceKey);
+          if (raw) try { sourceData = JSON.parse(raw); } catch (err) {}
+        }
+        if (sourceData && Array.isArray(sourceData.folders)) {
+          userFolders = JSON.parse(JSON.stringify(sourceData.folders));
+          itemFolderMap = JSON.parse(JSON.stringify(sourceData.itemMap || {}));
+          instanceFolderMap = JSON.parse(JSON.stringify(sourceData.instanceMap || {}));
+        }
+        await saveStorageData();
+        renderOrganizer();
+        closeModal();
+        showToast(`Folders copied from ${sourceName} into Account #${currentMid}!`);
+      });
+    });
 
     // Theme Selection Handler
     const modalThemeSelect = backdrop.querySelector('#lho-modal-theme-select');
@@ -2587,11 +2919,14 @@
     // Export Handler
     backdrop.querySelector('#lho-btn-export-json').addEventListener('click', () => {
       const extVersion = (typeof chrome !== 'undefined' && chrome.runtime?.getManifest)
-        ? (chrome.runtime.getManifest()?.version || '1.0.2')
-        : '1.0.2';
+        ? (chrome.runtime.getManifest()?.version || '1.1.2')
+        : '1.1.2';
       const exportData = {
         version: extVersion,
         exportedAt: new Date().toISOString(),
+        account: currentMid,
+        accountName: currentAccountName,
+        linkedAccountsMode: linkedAccountsMode,
         folders: userFolders,
         itemMap: itemFolderMap,
         instanceMap: instanceFolderMap
@@ -2600,7 +2935,8 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `lioden_hoard_folders_${new Date().toISOString().slice(0,10)}.json`;
+      const accSuffix = (linkedAccountsMode === 'separate' && currentMid) ? `_acc${currentMid}` : '';
+      a.download = `lioden_hoard_folders${accSuffix}_${new Date().toISOString().slice(0,10)}.json`;
       a.click();
       URL.revokeObjectURL(url);
       showToast('Backup JSON exported successfully!');
@@ -2636,14 +2972,17 @@
 
     // Reset All Handler
     backdrop.querySelector('#lho-btn-reset-all').addEventListener('click', () => {
-      if (confirm('Are you sure you want to reset all folders and item assignments? This cannot be undone.')) {
+      const promptText = (linkedAccountsMode === 'separate' && currentMid)
+        ? `Are you sure you want to reset all folders and item assignments for Account #${currentMid}? This cannot be undone.`
+        : 'Are you sure you want to reset all shared folders and item assignments? This cannot be undone.';
+      if (confirm(promptText)) {
         userFolders = [];
         itemFolderMap = {};
         instanceFolderMap = {};
         activeFolderId = 'all';
         saveStorageData();
         closeModal();
-        showToast('Organizer reset to default folders.');
+        showToast(linkedAccountsMode === 'separate' ? `Folders reset for Account #${currentMid}.` : 'Organizer reset to default folders.');
         renderOrganizer();
       }
     });

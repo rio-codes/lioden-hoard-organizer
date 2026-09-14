@@ -1001,6 +1001,31 @@ body[data-lho-theme="desert"],
   color: var(--lho-primary);
 }
 
+.lho-radio-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--lho-border);
+  border-radius: 6px;
+  background: var(--lho-bg-card);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+.lho-radio-option:hover {
+  background: var(--lho-bg-card-selected);
+  border-color: var(--lho-accent);
+}
+.lho-radio-option.selected {
+  background: var(--lho-bg-card-selected);
+  border-color: var(--lho-accent);
+}
+.lho-radio-option input[type="radio"] {
+  accent-color: var(--lho-accent);
+  cursor: pointer;
+}
+
 .lho-form-input {
   width: 100%;
   padding: 7px 10px;
