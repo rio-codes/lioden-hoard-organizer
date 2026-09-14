@@ -192,8 +192,8 @@
   function extractHoardData() {
     try {
       const scripts = Array.from(document.querySelectorAll('script'));
-      const targetScript = scripts.find(s => 
-        s.textContent.includes('var inventoryData = ') && 
+      const targetScript = scripts.find(s =>
+        s.textContent.includes('var inventoryData = ') &&
         s.textContent.includes('var itemData = ')
       );
 
@@ -237,7 +237,7 @@
           inv.description = item.description || '';
           inv.picture = item.picture || '';
           inv.crafting = item.crafting == 1;
-          inv.is_custom = item.is_custom == 1;
+          inv.is_custom = (item.is_custom == 1);
         }
       }
 
@@ -781,9 +781,9 @@
           ${userFolders.map(folder => {
             const count = countFolderItems(folder.id);
             return `
-              <div class="lho-tab user-folder-tab ${activeFolderId === folder.id ? 'active' : ''}" 
-                   draggable="true" 
-                   data-folder-id="${folder.id}" 
+              <div class="lho-tab user-folder-tab ${activeFolderId === folder.id ? 'active' : ''}"
+                   draggable="true"
+                   data-folder-id="${folder.id}"
                    title="Drag to reorder folder or click to open">
                 <span class="lho-tab-dot" style="background: ${folder.color};"></span>
                 <span class="lho-tab-icon">${folder.icon || '📁'}</span>
@@ -887,7 +887,7 @@
         <div class="lho-bulk-actions">
           <button type="button" class="lho-btn lho-btn-outline lho-btn-sm" id="lho-btn-select-all">Select All Visible</button>
           <button type="button" class="lho-btn lho-btn-outline lho-btn-sm" id="lho-btn-deselect-all">Deselect All</button>
-          
+
           <span style="color: var(--lho-border-dark);">|</span>
 
           <span>Move to:</span>
@@ -997,7 +997,7 @@
       // Search Query (searches item titles only)
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
-        const matchesName = (inv.name && inv.name.toLowerCase().includes(q)) || 
+        const matchesName = (inv.name && inv.name.toLowerCase().includes(q)) ||
                             (inv.nameClean && inv.nameClean.toLowerCase().includes(q));
         if (!matchesName) return false;
       }
@@ -1099,8 +1099,8 @@
           <div class="lho-empty-icon">${isBuried ? '⛏️' : '📦'}</div>
           <div class="lho-empty-title">${isBuried ? 'No buried items found' : 'No items found'}</div>
           <div class="lho-empty-desc">
-            ${searchQuery || categoryFilter !== 'all' 
-              ? 'No items match your current search or category filter.' 
+            ${searchQuery || categoryFilter !== 'all'
+              ? 'No items match your current search or category filter.'
               : isBuried
                 ? (activeFolderId === 'unsorted' && countFolderItems('all') > 0
                     ? 'All buried items have been organized into folders!'
@@ -1147,8 +1147,8 @@
 
     // Action link & text
     const isFileProto = window.location.protocol === 'file:';
-    const useUrl = isStacked 
-      ? (isFileProto ? `https://www.lioden.com/hoard.php?stack=${inv.item}` : `/hoard.php?stack=${inv.item}`) 
+    const useUrl = isStacked
+      ? (isFileProto ? `https://www.lioden.com/hoard.php?stack=${inv.item}` : `/hoard.php?stack=${inv.item}`)
       : (isFileProto ? `https://www.lioden.com/use.php?id=${inv.id}` : `/use.php?id=${inv.id}`);
     const useText = isStacked ? `${inv.amount} Stacked` : `${inv.totaluses} ${inv.totaluses === 1 ? 'use' : 'uses'}`;
     const linkTarget = isFileProto ? ' target="_blank" rel="noopener noreferrer"' : '';
@@ -1180,15 +1180,15 @@
     const checkValue = isStacked ? inv.item : inv.id;
 
     return `
-      <div class="lho-card ${isChecked ? 'selected' : ''}" 
-           draggable="true" 
-           data-item-id="${inv.item}" 
-           data-id="${inv.id}" 
+      <div class="lho-card ${isChecked ? 'selected' : ''}"
+           draggable="true"
+           data-item-id="${inv.item}"
+           data-id="${inv.id}"
            data-check-value="${checkValue}"
            data-name="${escapeHtml(inv.name)}"
            data-clean-name="${escapeHtml(inv.nameClean)}"
            data-description="${escapeHtml(inv.description)}">
-        
+
         <!-- Header -->
         <div class="lho-card-header" title="${escapeHtml(inv.name)}">
           ${escapeHtml(inv.name)}
@@ -2154,8 +2154,8 @@
     if (!itemsToDig || itemsToDig.length === 0) return;
     const count = itemsToDig.length;
     const countText = `${count} item${count === 1 ? '' : 's'}`;
-    const confirmMsg = label 
-      ? `Are you sure you want to dig up ${countText} (${label})?` 
+    const confirmMsg = label
+      ? `Are you sure you want to dig up ${countText} (${label})?`
       : `Are you sure you want to dig up ${countText}?`;
     if (!confirm(confirmMsg)) return;
 
@@ -2240,8 +2240,8 @@
     if (!itemsToBury || itemsToBury.length === 0) return;
     const count = itemsToBury.length;
     const countText = `${count} item${count === 1 ? '' : 's'}`;
-    const confirmMsg = label 
-      ? `Are you sure you want to bury ${countText} (${label})?` 
+    const confirmMsg = label
+      ? `Are you sure you want to bury ${countText} (${label})?`
       : `Are you sure you want to bury ${countText}?`;
     if (!confirm(confirmMsg)) return;
 
@@ -2351,6 +2351,40 @@
     submitItemsToBranch(folderItems, folder.name);
   }
 
+  async function getStackItemIds(itemId) {
+    try {
+      const res = await fetch(`/hoard.php?stack=${itemId}`);
+      if (!res.ok) return [];
+      const html = await res.text();
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+
+      // Method 1: Extract from script tag var inventoryData
+      const scripts = Array.from(doc.querySelectorAll('script'));
+      const targetScript = scripts.find(s => s.textContent.includes('var inventoryData = '));
+      if (targetScript) {
+        const text = targetScript.textContent;
+        const invStart = text.indexOf('var inventoryData = ');
+        if (invStart !== -1) {
+          const activeStart = text.indexOf('var activeItems = ');
+          const rawInv = text.slice(invStart + 'var inventoryData = '.length, activeStart !== -1 ? activeStart : text.length).trim().replace(/;$/, '');
+          const invData = JSON.parse(rawInv);
+          if (Array.isArray(invData) && invData.length > 0) {
+            return invData.map(item => item.id).filter(Boolean);
+          }
+        }
+      }
+
+      // Method 2: Fallback extract from input[name="item[]"] checkboxes
+      const checkboxes = Array.from(doc.querySelectorAll('input[name="item[]"]'));
+      if (checkboxes.length > 0) {
+        return checkboxes.map(cb => cb.value).filter(Boolean);
+      }
+    } catch (e) {
+      console.warn('[LHO] Failed to fetch stack item IDs for item', itemId, e);
+    }
+    return [];
+  }
+
   async function submitItemsToBranch(items, folderName) {
     if (!items || items.length === 0) return;
 
@@ -2359,13 +2393,18 @@
     const stackedList = [];
     const unstackedList = [];
 
-    items.forEach(inv => {
+    await Promise.all(items.map(async (inv) => {
       if (inv.amount > 1) {
-        stackedList.push(inv.item);
+        const stackIds = await getStackItemIds(inv.item);
+        if (stackIds && stackIds.length > 0) {
+          stackIds.forEach(id => unstackedList.push(id));
+        } else {
+          stackedList.push(inv.item);
+        }
       } else {
         unstackedList.push(inv.id);
       }
-    });
+    }));
 
     const isBuried = checkIsBuriedPage();
     const formData = new FormData();
@@ -2516,7 +2555,7 @@
           if (emojiPreview) emojiPreview.textContent = q;
         }
 
-        results = allEmojis.filter(item => 
+        results = allEmojis.filter(item =>
           item.e === q ||
           item.n.includes(q) ||
           (item.k && item.k.includes(q))
@@ -2559,8 +2598,8 @@
       }
 
       emojiGrid.innerHTML = displayResults.map(item => `
-        <button type="button" class="lho-emoji-btn ${item.e === selectedIcon ? 'selected' : ''}" 
-                data-emoji="${item.e}" 
+        <button type="button" class="lho-emoji-btn ${item.e === selectedIcon ? 'selected' : ''}"
+                data-emoji="${item.e}"
                 title="${escapeHtml(item.n)}">
           ${item.e}
         </button>
@@ -2919,8 +2958,8 @@
     // Export Handler
     backdrop.querySelector('#lho-btn-export-json').addEventListener('click', () => {
       const extVersion = (typeof chrome !== 'undefined' && chrome.runtime?.getManifest)
-        ? (chrome.runtime.getManifest()?.version || '1.1.2')
-        : '1.1.2';
+        ? (chrome.runtime.getManifest()?.version || '1.1.4')
+        : '1.1.4';
       const exportData = {
         version: extVersion,
         exportedAt: new Date().toISOString(),

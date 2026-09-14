@@ -33,6 +33,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // Set header version from manifest if available
+  const versionEl = document.querySelector('.header-version');
+  if (versionEl) {
+    const extVer = (typeof chrome !== 'undefined' && chrome.runtime?.getManifest)
+      ? chrome.runtime.getManifest()?.version
+      : '1.1.4';
+    if (extVer) versionEl.textContent = `v${extVer}`;
+  }
+
   loadData((data, settings, activeKey) => {
     // Apply theme
     const themeToApply = (settings.theme && settings.theme !== 'auto') 
@@ -95,8 +104,8 @@ document.addEventListener('DOMContentLoaded', () => {
     btnExport.addEventListener('click', () => {
       loadData((data, settings) => {
         const extVersion = (typeof chrome !== 'undefined' && chrome.runtime?.getManifest)
-          ? (chrome.runtime.getManifest()?.version || '1.1.2')
-          : '1.1.2';
+          ? (chrome.runtime.getManifest()?.version || '1.1.4')
+          : '1.1.4';
         const exportData = {
           version: extVersion,
           exportedAt: new Date().toISOString(),
