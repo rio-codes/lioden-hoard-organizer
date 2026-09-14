@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (versionEl) {
     const extVer = (typeof chrome !== 'undefined' && chrome.runtime?.getManifest)
       ? chrome.runtime.getManifest()?.version
-      : '1.1.4';
+      : '1.1.5';
     if (extVer) versionEl.textContent = `v${extVer}`;
   }
 
@@ -104,8 +104,8 @@ document.addEventListener('DOMContentLoaded', () => {
     btnExport.addEventListener('click', () => {
       loadData((data, settings) => {
         const extVersion = (typeof chrome !== 'undefined' && chrome.runtime?.getManifest)
-          ? (chrome.runtime.getManifest()?.version || '1.1.4')
-          : '1.1.4';
+          ? (chrome.runtime.getManifest()?.version || '1.1.5')
+          : '1.1.5';
         const exportData = {
           version: extVersion,
           exportedAt: new Date().toISOString(),

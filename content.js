@@ -1602,9 +1602,13 @@
         });
         const count = itemsToBranch.length;
         if (count === 0) return;
-        if (confirm(`Put ${count} selected item${count === 1 ? '' : 's'} on your Branch?`)) {
+        const totalItems = itemsToBranch.reduce((sum, inv) => sum + (inv.amount || 1), 0);
+        const countMsg = totalItems > count
+          ? `${totalItems} items (${count} selected)`
+          : `${count} selected item${count === 1 ? '' : 's'}`;
+        if (confirm(`Put ${countMsg} on your Branch?`)) {
           if (window.location.protocol === 'file:') {
-            showToast(`[Preview] Put ${count} selected items on Branch!`);
+            showToast(`[Preview] Put ${totalItems} item(s) on Branch!`);
             selectedItems.clear();
             renderOrganizer();
             return;
@@ -2329,14 +2333,17 @@
       return;
     }
 
-    const count = folderItems.length;
-    const countText = `${count} item${count === 1 ? '' : 's'}`;
-    if (!confirm(`Are you sure you want to put all ${countText} in "${folder.name}" on your Branch?`)) {
+    const totalItems = folderItems.reduce((sum, inv) => sum + (inv.amount || 1), 0);
+    const countMsg = totalItems > folderItems.length
+      ? `${totalItems} items (${folderItems.length} entries)`
+      : `${folderItems.length} item${folderItems.length === 1 ? '' : 's'}`;
+
+    if (!confirm(`Are you sure you want to put all ${countMsg} in "${folder.name}" on your Branch?`)) {
       return;
     }
 
     if (window.location.protocol === 'file:') {
-      showToast(`[Preview] Put all ${countText} from "${folder.name}" on Branch!`);
+      showToast(`[Preview] Put all ${countMsg} from "${folder.name}" on Branch!`);
       const itemSet = new Set(folderItems.map(inv => inv.id || inv.item));
       const isBuried = checkIsBuriedPage();
       if (isBuried) {
@@ -2352,35 +2359,41 @@
   }
 
   async function getStackItemIds(itemId) {
-    try {
-      const res = await fetch(`/hoard.php?stack=${itemId}`);
-      if (!res.ok) return [];
-      const html = await res.text();
-      const doc = new DOMParser().parseFromString(html, 'text/html');
+    const isBuried = checkIsBuriedPage();
+    const urls = isBuried
+      ? [`/hoard.php?page=buried&stack=${itemId}`, `/hoard.php?stack=${itemId}`]
+      : [`/hoard.php?stack=${itemId}`];
 
-      // Method 1: Extract from script tag var inventoryData
-      const scripts = Array.from(doc.querySelectorAll('script'));
-      const targetScript = scripts.find(s => s.textContent.includes('var inventoryData = '));
-      if (targetScript) {
-        const text = targetScript.textContent;
-        const invStart = text.indexOf('var inventoryData = ');
-        if (invStart !== -1) {
-          const activeStart = text.indexOf('var activeItems = ');
-          const rawInv = text.slice(invStart + 'var inventoryData = '.length, activeStart !== -1 ? activeStart : text.length).trim().replace(/;$/, '');
-          const invData = JSON.parse(rawInv);
-          if (Array.isArray(invData) && invData.length > 0) {
-            return invData.map(item => item.id).filter(Boolean);
+    for (const url of urls) {
+      try {
+        const res = await fetch(url, { credentials: 'include' });
+        if (!res.ok) continue;
+        const html = await res.text();
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+
+        const ids = [];
+        // Primary: extract from input[name="item[]"] checkboxes (only items in this stack are listed on this page)
+        doc.querySelectorAll('#fraHoardList input[name="item[]"], .item input[name="item[]"], input[name="item[]"]').forEach(cb => {
+          const val = (cb.value || '').trim();
+          if (val && /^\d+$/.test(val) && !ids.includes(val)) {
+            ids.push(val);
           }
-        }
-      }
+        });
 
-      // Method 2: Fallback extract from input[name="item[]"] checkboxes
-      const checkboxes = Array.from(doc.querySelectorAll('input[name="item[]"]'));
-      if (checkboxes.length > 0) {
-        return checkboxes.map(cb => cb.value).filter(Boolean);
+        // Fallback: extract from use.php?id= links
+        if (ids.length === 0) {
+          doc.querySelectorAll('#fraHoardList a[href*="use.php?id="], .item a[href*="use.php?id="], a[href*="use.php?id="]').forEach(a => {
+            const m = (a.getAttribute('href') || '').match(/id=(\d+)/);
+            if (m && !ids.includes(m[1])) {
+              ids.push(m[1]);
+            }
+          });
+        }
+
+        if (ids.length > 0) return ids;
+      } catch (e) {
+        console.warn('[LHO] Failed to fetch stack item IDs from', url, e);
       }
-    } catch (e) {
-      console.warn('[LHO] Failed to fetch stack item IDs for item', itemId, e);
     }
     return [];
   }
@@ -2388,7 +2401,7 @@
   async function submitItemsToBranch(items, folderName) {
     if (!items || items.length === 0) return;
 
-    showToast(`Transferring ${items.length} items to your Branch...`);
+    showToast(`Preparing ${items.length} item(s) for your Branch...`);
 
     const stackedList = [];
     const unstackedList = [];
@@ -2397,40 +2410,73 @@
       if (inv.amount > 1) {
         const stackIds = await getStackItemIds(inv.item);
         if (stackIds && stackIds.length > 0) {
-          stackIds.forEach(id => unstackedList.push(id));
+          stackIds.forEach(id => {
+            if (!unstackedList.includes(id)) unstackedList.push(id);
+          });
         } else {
-          stackedList.push(inv.item);
+          if (!stackedList.includes(inv.item)) stackedList.push(inv.item);
         }
       } else {
-        unstackedList.push(inv.id);
+        if (inv.id && !unstackedList.includes(inv.id)) {
+          unstackedList.push(inv.id);
+        }
       }
     }));
 
+    if (unstackedList.length === 0 && stackedList.length === 0) {
+      showToast('Could not resolve item IDs to transfer to Branch.', 4000);
+      return;
+    }
+
     const isBuried = checkIsBuriedPage();
-    const formData = new FormData();
-    formData.append('source', isBuried ? 'buried' : 'hoard');
-    formData.append('itemsStacked', stackedList.join(','));
-    formData.append('itemsUnstacked', unstackedList.join(','));
-    formData.append('run', 'branch');
-    formData.append('action', 'Put On Branch');
+    const postData = new URLSearchParams();
+    postData.append('source', isBuried ? 'buried' : 'hoard');
+    postData.append('itemsStacked', stackedList.join(','));
+    postData.append('itemsUnstacked', unstackedList.join(','));
+    postData.append('run', 'branch');
+    postData.append('action', 'Put On Branch');
 
     try {
-      // Send POST request directly to hoard-organisation.php with user session
+      showToast(`Transferring items to your Branch...`);
       const resp = await fetch('/hoard-organisation.php', {
         method: 'POST',
-        body: formData,
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: postData.toString(),
         credentials: 'include'
       });
 
-      if (resp.ok) {
-        showToast(`Moved ${items.length} items from "${folderName}" to your Branch! 🌿`, 4000);
-        // Reload hoard page so user sees updated inventory immediately
-        setTimeout(() => {
-          window.location.reload();
-        }, 1200);
-      } else {
+      if (!resp.ok) {
         throw new Error(`HTTP ${resp.status}`);
       }
+
+      const respHtml = await resp.text();
+      const doc = new DOMParser().parseFromString(respHtml, 'text/html');
+
+      // Check if Lioden returned an error/warning alert (exclude achievement alerts)
+      const alerts = Array.from(doc.querySelectorAll('.alert:not(.achievement):not(#fraAchievementLink), .alert-danger, .alert-warning:not(.achievement)'));
+      const errorAlert = alerts.find(el => el.classList.contains('alert-danger') || el.classList.contains('alert-warning') || /error|failed|cannot|limit|slot/i.test(el.textContent));
+
+      if (errorAlert) {
+        const errorText = errorAlert.textContent.trim().replace(/\s+/g, ' ');
+        showToast(`Branch warning: ${errorText}`, 7000);
+        return;
+      }
+
+      // Look for a success alert or fallback success message
+      const successAlert = alerts.find(el => el.classList.contains('alert-success') || /branch|moved|put|success/i.test(el.textContent));
+      const totalMoved = unstackedList.length + stackedList.length;
+      const successMsg = successAlert
+        ? successAlert.textContent.trim().replace(/\s+/g, ' ')
+        : `Moved ${totalMoved} item${totalMoved === 1 ? '' : 's'} to your Branch! 🌿`;
+
+      showToast(`${successMsg} Remember to set prices on your Branch.`, 4000);
+      selectedItems.clear();
+      setTimeout(() => {
+        window.location.reload();
+      }, 1200);
+
     } catch (err) {
       console.warn('[LHO] Fetch branch transfer failed, falling back to direct form submit:', err);
 
@@ -2439,7 +2485,15 @@
       submitForm.method = 'POST';
       submitForm.action = '/hoard-organisation.php';
 
-      for (const [key, value] of formData.entries()) {
+      const fields = {
+        source: isBuried ? 'buried' : 'hoard',
+        itemsStacked: stackedList.join(','),
+        itemsUnstacked: unstackedList.join(','),
+        run: 'branch',
+        action: 'Put On Branch'
+      };
+
+      for (const [key, value] of Object.entries(fields)) {
         const inp = document.createElement('input');
         inp.type = 'hidden';
         inp.name = key;
@@ -2958,8 +3012,8 @@
     // Export Handler
     backdrop.querySelector('#lho-btn-export-json').addEventListener('click', () => {
       const extVersion = (typeof chrome !== 'undefined' && chrome.runtime?.getManifest)
-        ? (chrome.runtime.getManifest()?.version || '1.1.4')
-        : '1.1.4';
+        ? (chrome.runtime.getManifest()?.version || '1.1.5')
+        : '1.1.5';
       const exportData = {
         version: extVersion,
         exportedAt: new Date().toISOString(),
