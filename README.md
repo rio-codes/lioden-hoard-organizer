@@ -26,51 +26,6 @@ A standalone browser extension (Manifest V3) for [Lioden](https://www.lioden.com
 
 ---
 
-## Installation
-
-### Chrome / Chromium / Edge / Brave / Opera
-
-1. Open your browser and navigate to `chrome://extensions/` (or `edge://extensions/`).
-2. Enable **Developer mode** (toggle switch in the top-right corner).
-3. Click **Load unpacked**.
-4. Select the `lioden-hoard-sorter` folder.
-5. Navigate to [Lioden Hoard](https://www.lioden.com/hoard.php) to see your new Hoard Organizer!
-
-### Firefox
-
-1. Open Firefox and navigate to `about:debugging#/runtime/this-firefox`.
-2. Click **Load Temporary Add-on...**.
-3. Select the `manifest.json` file inside the `lioden-hoard-sorter` folder.
-4. Navigate to [Lioden Hoard](https://www.lioden.com/hoard.php).
-
-### Orion (iOS / iPadOS)
-
-1. Download the release `.zip` file (e.g., `lioden-hoard-organizer-latest.zip` or `lioden-hoard-organizer-v1.0.2.zip`) and save it to the **Files** app. *(Do not tap the file in Files to unzip it; Orion requires the `.zip` archive directly).*
-2. Open **Orion**.
-3. Tap the **•••** menu in the bottom-right (or top-right on iPad) -> **Settings**.
-4. Scroll down to **Extensions** and ensure extension support is toggled **ON**.
-5. Tap **•••** -> **Extensions**.
-6. Tap the **+** button in the top-right corner.
-7. Select the `.zip` file from the Files picker.
-8. Navigate to [Lioden Hoard](https://www.lioden.com/hoard.php).
-
-### Orion (macOS)
-
-1. Download and unzip `lioden-hoard-organizer-latest.zip`.
-2. Open Orion and click **Tools** -> **Extensions** -> **Add Extension** (or **Install from Disk...**).
-3. Select the unzipped folder containing `manifest.json`.
-4. Navigate to [Lioden Hoard](https://www.lioden.com/hoard.php).
-
-### Android (Kiwi Browser / Lemur Browser)
-
-1. Open Kiwi Browser or Lemur Browser.
-2. Tap the three dots **(⋮)** -> **Extensions**.
-3. Enable **Developer mode**.
-4. Tap **+(from .zip/.crx/.user.js)** and select `lioden-hoard-organizer-latest.zip`.
-5. Navigate to [Lioden Hoard](https://www.lioden.com/hoard.php).
-
----
-
 ## Packaging & Versioning
 
 To package the extension into clean distribution `.zip` archives (`dist/lioden-hoard-organizer-v{version}.zip` and `dist/lioden-hoard-organizer-latest.zip`):
