@@ -5,7 +5,7 @@ A standalone browser extension (Manifest V3) for [Lioden](https://www.lioden.com
 <a href="https://chromewebstore.google.com/detail/lioden-hoard-organizer/fdmjabicepnhibpcmabbkejhhaehhcgo?authuser=0&hl=en">Official Chrome Extension</a>
 
 
-<a href="https://addons.mozilla.org/en-US/firefox/addon/lioden-hoard-organizer/">Official Frefox Extension</a>
+<a href="https://addons.mozilla.org/en-US/firefox/addon/lioden-hoard-organizer/">Official Firefox Extension</a>
 
 ![Lioden Hoard Organizer Preview](lioden-hoard-sorter-screenshot.png)
 
