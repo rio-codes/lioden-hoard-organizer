@@ -3,6 +3,8 @@
 A standalone browser extension (Manifest V3) for [Lioden](https://www.lioden.com) that allows you to organize your Hoard into user-created folders, aggregates all items across pages, and provides instant filtering, sorting, and drag-and-drop organization.
 
 <a href="https://chromewebstore.google.com/detail/lioden-hoard-organizer/fdmjabicepnhibpcmabbkejhhaehhcgo?authuser=0&hl=en">Official Chrome Extension</a>
+
+
 <a href="https://addons.mozilla.org/en-US/firefox/addon/lioden-hoard-organizer/">Official Frefox Extension</a>
 
 ![Lioden Hoard Organizer Preview](lioden-hoard-sorter-screenshot.png)
